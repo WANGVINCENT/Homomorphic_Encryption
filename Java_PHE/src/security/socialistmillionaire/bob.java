@@ -39,51 +39,24 @@ Protocol 3 and Protocol 4 was created referencing Thjis Veugen's Paper:
 Improving the DGK Comparison Protocol (2012)
 */
 
-public final class bob implements socialist_millionaires, Runnable
-{
-	// Use Protocol 2 or Protocol 4 for Sorting
-	private boolean USE_PROTOCOL_2 = false;
-    private boolean FAST_DIVIDE = false;
-    
-	// Key Master
-	private PaillierPublicKey pk = null;
+public final class bob extends socialist_millionaires implements Runnable
+{   
+	// Only Bob has private keys
 	private PaillierPrivateKey sk = null;
-	
-	private DGKPublicKey pubKey = null;
 	private DGKPrivateKey privKey = null;
-	
-	private ElGamalPublicKey e_pk = null;
 	private ElGamalPrivateKey e_sk = null;
 
 	private ObjectOutputStream toAlice = null;
 	private ObjectInputStream fromAlice = null;
-
-	private boolean isDGK = false;
 	
-	private final BigInteger powL;
-	
-	// YOU SHOULD USE THIS CONSTRUCTOR!
 	public bob (Socket clientSocket,
 			KeyPair a, KeyPair b) throws IOException, IllegalArgumentException
 	{
-		this(clientSocket, a, b, null, false);
-	}
-	
-	// YOU SHOULD USE THIS CONSTRUCTOR!
-	public bob (Socket clientSocket,
-			KeyPair a, KeyPair b, KeyPair c) throws IOException, IllegalArgumentException
-	{
-		this(clientSocket, a, b, c, false);
+		this(clientSocket, a, b, null);
 	}
 	
 	public bob (Socket clientSocket,
-			KeyPair a, KeyPair b, boolean IS_DEBUG) throws IOException, IllegalArgumentException
-	{
-		this(clientSocket, a, b, null, IS_DEBUG);
-	}
-	
-	public bob (Socket clientSocket,
-			KeyPair a, KeyPair b, KeyPair c, boolean IS_DEBUG) 
+			KeyPair a, KeyPair b, KeyPair c) 
 					throws IOException, IllegalArgumentException
 	{
 		if(clientSocket != null)
@@ -140,13 +113,7 @@ public final class bob implements socialist_millionaires, Runnable
 		}
 
 		this.sendPublicKeys();
-		this.isDGK = false;
 		powL = TWO.pow(pubKey.getL());
-		
-		if(IS_DEBUG)
-		{
-			this.debug();
-		}
 	}
 
 	// Get/Set Fast Divide/Protocol 2
@@ -160,24 +127,9 @@ public final class bob implements socialist_millionaires, Runnable
 		return FAST_DIVIDE;
 	}
 		
-	public void setFastDivide(boolean FAST_DIVIDE)
-	{
-		this.FAST_DIVIDE = FAST_DIVIDE;
-	}
-		
-	public void setProtocol2(boolean USE_PROTOCOL_2)
-	{
-		this.USE_PROTOCOL_2 = USE_PROTOCOL_2;
-	}
-		
 	public boolean isDGK()
 	{
 		return isDGK;
-	}
-	
-	public void setDGKMode(boolean mode)
-	{
-		isDGK = mode;
 	}
 	
 	// Get PublicKey
@@ -1056,23 +1008,6 @@ public final class bob implements socialist_millionaires, Runnable
 		if(e_pk != null)
 		{
 			toAlice.writeObject(e_pk);
-		}
-		else
-		{
-			toAlice.writeObject(BigInteger.ZERO);
-		}
-		toAlice.flush();
-	}
-
-	protected void debug() throws IOException
-	{
-		toAlice.writeObject(privKey);
-		toAlice.flush();
-		toAlice.writeObject(sk);
-		toAlice.flush();
-		if(e_sk != null)
-		{
-			toAlice.writeObject(e_sk);
 		}
 		else
 		{

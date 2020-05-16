@@ -9,15 +9,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import security.DGK.DGKOperations;
-import security.DGK.DGKPrivateKey;
 import security.DGK.DGKPublicKey;
 import security.elgamal.ElGamalCipher;
-import security.elgamal.ElGamalPrivateKey;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamal_Ciphertext;
 import security.generic.NTL;
 import security.paillier.PaillierCipher;
-import security.paillier.PaillierPrivateKey;
 import security.paillier.PaillierPublicKey;
 
 import java.util.Deque;
@@ -43,7 +40,7 @@ enum Algorithm
     INSERT_SORT, MERGE_SORT, QUICK_SORT, BUBBLE_SORT;
 }
 
-public final class alice implements socialist_millionaires, Runnable
+public final class alice extends socialist_millionaires implements Runnable
 {
 	private class Pair 
 	{
@@ -51,22 +48,7 @@ public final class alice implements socialist_millionaires, Runnable
 		BigInteger max;
 	}
 	
-    // To avoid code reuse in Sorting...Flag to use Protocol 2 or Protocol 4
-    private boolean USE_PROTOCOL_2 = false;
-    private boolean FAST_DIVIDE = false;
-    
-	// Alice  will be given the Public Keys
-	private PaillierPublicKey pk = null;
-	private DGKPublicKey pubKey = null;
-	private ElGamalPublicKey e_pk = null;
-
-	// ONLY USED FOR DEBUGGING
-	private DGKPrivateKey privKey = null;
-	private PaillierPrivateKey sk = null;
-	private ElGamalPrivateKey e_sk = null;
-	
 	// Needed for comparison
-	private boolean isDGK = false;
 	private BigInteger [] toSort = null;
 	private BigInteger [] sortedArray = null;
 	// Temporary for Merge Sort
@@ -78,16 +60,8 @@ public final class alice implements socialist_millionaires, Runnable
 	
 	// Current Algorithm to Sort with
 	private Algorithm algo;
-    private final BigInteger powL;
     
-    // YOU SHOULD USE THIS CONSTRUCTOR!
-    public alice (Socket clientSocket) throws IOException, ClassNotFoundException
-	{
-    	this(clientSocket, false);
-	}
-	
-	public alice (Socket clientSocket,
-            boolean is_testing) throws IOException, ClassNotFoundException
+	public alice (Socket clientSocket) throws IOException, ClassNotFoundException
 	{
 		if(clientSocket != null)
 		{
@@ -98,16 +72,11 @@ public final class alice implements socialist_millionaires, Runnable
 		{
 			throw new NullPointerException("Client Socket is null!");
 		}
-		this.isDGK = false;
+		isDGK = false;
 		this.algo = Algorithm.BUBBLE_SORT;
 		
 		this.receivePublicKeys();
 		powL = TWO.pow(pubKey.getL());
-		
-		if(is_testing)
-		{
-			this.debug();
-		}
 	}
 	
 	// Get/Set Fast Divide/Protocol 2
@@ -120,25 +89,10 @@ public final class alice implements socialist_millionaires, Runnable
 	{
 		return FAST_DIVIDE;
 	}
-		
-	public void setFastDivide(boolean FAST_DIVIDE)
-	{
-		this.FAST_DIVIDE = FAST_DIVIDE;
-	}
-		
-	public void setProtocol2(boolean USE_PROTOCOL_2)
-	{
-		this.USE_PROTOCOL_2 = USE_PROTOCOL_2;
-	}
 
 	public boolean isDGK()
 	{
 		return isDGK;
-	}
-	
-	public void setDGKMode(boolean isDGK)
-	{
-		this.isDGK = isDGK;
 	}
 	
 	public void setSorting(List<BigInteger> toSort)
@@ -1264,11 +1218,6 @@ public final class alice implements socialist_millionaires, Runnable
 			{
 				answer = DGKOperations.subtract(pubKey, answer, DGKOperations.encrypt(pubKey, t));
 			}
-			// Print Answer to verify
-			if(privKey != null)
-			{
-				System.out.println("answer: " + DGKOperations.decrypt(privKey, answer));	
-			}
 		}
 		else
 		{
@@ -1276,11 +1225,6 @@ public final class alice implements socialist_millionaires, Runnable
 			if(t == 1)
 			{
 				answer = PaillierCipher.subtract(answer, PaillierCipher.encrypt(BigInteger.valueOf(t), pk), pk);
-			}
-			// Print Answer to verify
-			if (sk != null)
-			{
-				System.out.println("answer: " + PaillierCipher.decrypt(answer, sk));	
 			}
 		}
 		return answer;
@@ -1330,11 +1274,6 @@ public final class alice implements socialist_millionaires, Runnable
 				result = DGKOperations.subtract(pubKey, result, DGKOperations.multiply(pubKey, y, a));
 				// To avoid throwing an exception to myself of encrypt range [0, U), mod it now!
 				result = DGKOperations.subtract(pubKey, result, DGKOperations.encrypt(pubKey, a.multiply(b).mod(pubKey.getU())));	
-				// Debug...
-				if(privKey != null)
-				{
-					System.out.println(DGKOperations.decrypt(result, privKey));
-				}
 			}
 			else
 			{
@@ -1342,11 +1281,6 @@ public final class alice implements socialist_millionaires, Runnable
 				result = PaillierCipher.subtract(result, PaillierCipher.multiply(y, a, pk), pk);
 				// To avoid throwing an exception to myself of encrypt range [0, N), mod it now!
 				result = PaillierCipher.subtract(result, PaillierCipher.encrypt(a.multiply(b).mod(pk.getN()), pk), pk);
-				// Debug...
-				if(sk != null)
-				{
-					System.out.println(PaillierCipher.decrypt(result, sk));
-				}
 			}
 		}
 		else
@@ -1407,12 +1341,6 @@ public final class alice implements socialist_millionaires, Runnable
 		{
 			answer = ElGamalCipher.subtract(answer, ElGamalCipher.encrypt(e_pk, t), e_pk);
 		}
-		
-		// Print Answer to verify
-		if (e_sk != null)
-		{
-			System.out.println("answer: " + ElGamalCipher.decrypt(e_sk, answer));	
-		}
 		return answer;
 	}
 	
@@ -1448,18 +1376,6 @@ public final class alice implements socialist_millionaires, Runnable
 			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply(x, b, e_pk), e_pk);
 			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply(y, a, e_pk), e_pk);
 			result = ElGamalCipher.subtract(result, ElGamalCipher.encrypt(e_pk, a.multiply(b)), e_pk);
-			// Debug...
-			if(e_sk != null)
-			{
-				try
-				{
-					System.out.println(ElGamalCipher.decrypt(e_sk, result));
-				}
-				catch(IllegalArgumentException e)
-				{
-					System.out.println("[[x * y]] is out of scope of plain-text!");
-				}
-			}
 		}
 		else
 		{
@@ -1866,43 +1782,6 @@ public final class alice implements socialist_millionaires, Runnable
 		}
 	}
 	
-	protected void debug() throws ClassNotFoundException, IOException, IllegalArgumentException
-	{
-		Object in;
-		in = fromBob.readObject();
-		if (in instanceof DGKPrivateKey)
-		{
-			privKey = (DGKPrivateKey) in;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Invalid, did not receive DGK Private Key!");
-		}
-		in = fromBob.readObject();
-		if (in instanceof PaillierPrivateKey)
-		{
-			sk = (PaillierPrivateKey) in;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Invalid, did not receive Paillier Private Key!");
-		}
-		in = fromBob.readObject();
-		if (in instanceof ElGamalPrivateKey)
-		{
-			e_sk = (ElGamalPrivateKey) in;
-		}
-		else if(in instanceof BigInteger)
-		{
-			e_sk = null;
-			return;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Invalid, did not receive ElGamal Private Key!");
-		}
-	}
-	
 	// Used to shuffle the encrypted bits
 	// NOTE THIS METHOD DOES NOT ALLOCATE A NEW ARRAY!
 	// SO BE CAREFUL WITH POINTER MANAGEMENT HERE!
@@ -2045,21 +1924,6 @@ public final class alice implements socialist_millionaires, Runnable
 			min.add(arr.get(arr.size() - 1 - i));
 		}
 		
-		if(e_sk != null)
-		{
-			System.out.println("ElGamal sorting");
-			for(int i = 0; i < arr.size(); i++)
-			{
-				System.out.print(ElGamalCipher.decrypt(e_sk, arr.get(i)) + ", ");
-			}
-			System.out.println("");
-			for(int i = 0; i < k; i++)
-			{
-				System.out.print(ElGamalCipher.decrypt(e_sk, min.get(i)) + ", ");
-			}
-			System.out.println("");
-		}
-		
 		// Close Bob
 		toBob.writeBoolean(false);
 		toBob.flush();
@@ -2109,37 +1973,6 @@ public final class alice implements socialist_millionaires, Runnable
 		for (int i = 0; i < k; i++)
 		{
 			min[i] = arr[arr.length - 1 - i];
-		}
-		
-		if(!isDGK && sk != null)
-		{
-			System.out.println("Paillier sorting...");
-			for(int i = 0; i < arr.length; i++)
-			{
-				System.out.print(PaillierCipher.decrypt(arr[i], sk) + ", ");
-			}
-			System.out.println(" ");
-			for(int i = 0; i < k; i++)
-			{
-				System.out.print(PaillierCipher.decrypt(min[i], sk) + ", ");
-			}
-			System.out.println("");
-		}
-		
-		
-		if(isDGK && privKey != null)
-		{
-			System.out.println("DGK sorting...");
-			for(int i = 0; i < arr.length; i++)
-			{
-				System.out.print(DGKOperations.decrypt(arr[i], privKey) + ", ");
-			}
-			System.out.println(" ");
-			for(int i = 0; i < k; i++)
-			{
-				System.out.print(DGKOperations.decrypt(min[i], privKey) + ", ");
-			}
-			System.out.println("");
 		}
 	
 		// Close Bob
@@ -2195,31 +2028,6 @@ public final class alice implements socialist_millionaires, Runnable
 		for (int i = 0; i < k; i++)
 		{
 			min[i] = arr.get(arr.size() - 1 - i);
-		}
-		
-		if(!isDGK && sk != null)
-		{
-			System.out.println(" ");
-			for(int i = 0; i < k; i++)
-			{
-				System.out.print(PaillierCipher.decrypt(min[i], sk) + ", ");
-			}
-			System.out.println("");
-		}
-		
-		if(isDGK && privKey != null)
-		{
-			System.out.println(" ");
-			for(int i = 0; i < arr.size(); i++)
-			{
-				System.out.print(DGKOperations.decrypt(arr.get(i), privKey) + ", ");
-			}
-			System.out.println(" ");
-			for(int i = 0; i < k; i++)
-			{
-				System.out.print(DGKOperations.decrypt(min[i], privKey) + ", ");
-			}
-			System.out.println("");
 		}
 		
 		// Close Bob

@@ -19,7 +19,8 @@ public class ElGamalSignature extends SignatureSpi
 	private ElGamalPublicKey pk;
 	private boolean VERIFY_MODE;
 	private byte [] encoded_hash;
-	
+	private final static BigInteger TWO = new BigInteger("2");
+			
 	protected void engineInitVerify(PublicKey publicKey) 
 			throws InvalidKeyException 
 	{
@@ -169,7 +170,7 @@ public class ElGamalSignature extends SignatureSpi
         {
         	throw new IllegalArgumentException("Invalid r!");
         }
-        if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(BigInteger.TWO)) == 1)
+        if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(TWO)) == 1)
         {
         	throw new IllegalArgumentException("Invalid s!");
         }

@@ -86,7 +86,7 @@ public class Main
 			if (isAlice)
 			{
 				// I need to ensure that Alice has same Keys as Bob! and initialize as well
-				Niu = new alice(new Socket("192.168.1.208", 9254), true);
+				Niu = new alice(new Socket("192.168.1.208", 9254));
 				
 				// TO BE CONSISTENT I NEED TO USE KEYS FROM BOB!
 				pk = Niu.getPaiilierPublicKey();
@@ -156,8 +156,8 @@ public class Main
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
-				andrew = new bob(bob_client, pe, DGK, el_gamal, true);
-				
+				andrew = new bob(bob_client, pe, DGK, el_gamal);
+	
 				// Test Protocol 1 - 4 functionality
 				bob_demo();
 				bob_ElGamal();
