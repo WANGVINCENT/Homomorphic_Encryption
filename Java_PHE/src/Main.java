@@ -9,8 +9,6 @@ import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.crypto.Cipher;
-
 import security.DGK.DGKKeyPairGenerator;
 import security.DGK.DGKOperations;
 import security.DGK.DGKPrivateKey;
@@ -1139,30 +1137,9 @@ public class Main
 
 		System.out.println("START GOLDWASSER-MICALI TESTING!");
 		start = System.nanoTime();
-		GMCipher gm_test = new GMCipher();
-		byte [] test;
 		for(int i = 0; i < SIZE; i++)
 		{
 			GMCipher.encrypt(t, gm_pk);
-			try
-			{
-				gm_test.init(Cipher.ENCRYPT_MODE, gm_pk);
-				test = gm_test.doFinal(t.toByteArray());
-				gm_test.init(Cipher.DECRYPT_MODE, gm_sk);
-				test = gm_test.doFinal(test);
-				if(new BigInteger(test).equals(t))
-				{
-					System.out.println("YAY");
-				}
-				else
-				{
-					System.out.println("FUCK");
-				}
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 

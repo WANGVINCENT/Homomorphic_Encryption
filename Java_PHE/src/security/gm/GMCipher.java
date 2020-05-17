@@ -74,14 +74,11 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		
 		// get the public key in order to encrypt
 		List<BigInteger> c = encrypt(m, (GMPublicKey) keyGM);
-		System.out.println("Cipher bits -- E");
 		for (int i = c.size() - 1; i != -1; i--)
 		{
-			System.out.println(c.get(i));
 			byte [] c_i = c.get(i).toByteArray();
 			System.arraycopy(c_i, 0, output, output.length - (plaintextSize * i) - c_i.length, c_i.length);
 		}
-		System.out.println("Cipher bits -- E");
 		return ciphertextSize;
 	}
 
@@ -113,21 +110,15 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		// Get list of BigIntegers from bytes
 		List<BigInteger> c = new ArrayList<BigInteger>();
 		int num_bits = input.length/plaintextSize;
-		System.out.println("Cipher bits -- D");
-		for(int i = 0; i < num_bits;i++)
+		for(int i = num_bits - 1; i != -1;i--)
 		{
 			byte [] c_i = new byte[plaintextSize];
 			System.arraycopy(cBytes, i * ciphertextSize, c_i, 0, c_i.length);
 			BigInteger b = new BigInteger(c_i);
-			System.out.println(b);
 			c.add(b);
 		}
 		System.out.println("Cipher bits -- D");
-		// calculate the message
-		System.out.println(input.length);
-		System.out.println(output.length);
-		System.out.println(num_bits);
-		byte[] messageBytes = decrypt(c, key).toByteArray();
+		byte [] messageBytes = decrypt(c, key).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
 		return plaintextSize;
@@ -385,8 +376,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final void calculateBlockSizes(int modulusLength)
 	{
 		plaintextSize = ((modulusLength + 8) / 8); // is N big
-		ciphertextSize = ((modulusLength + 8) / 8);// is N * number of bits in N
-		System.out.println("Caclucate block: " + modulusLength + " " + plaintextSize + " " + ciphertextSize);
+		ciphertextSize = ((modulusLength + 8) / 8);// is N * number of bits in N, leave equal for now
 	}
 	
 	// -------------------------PUBLIC FACING METHODS---------------------------------
