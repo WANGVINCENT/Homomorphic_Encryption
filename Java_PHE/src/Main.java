@@ -136,13 +136,9 @@ public class Main
 				gm_pk = (GMPublicKey) gm.getPublic();
 				gm_sk = (GMPrivateKey) gm.getPrivate();
 				
-				ElGamal_Ciphertext t = ElGamalCipher.encrypt(e_pk, 1000);
-				ElGamal_Ciphertext t_2 = ElGamalCipher.subtract(t, ElGamalCipher.encrypt(e_pk, 10), e_pk);
-				System.out.println(ElGamalCipher.decrypt(e_sk, t_2));
 				//test_signature();
 				
 				// Stress Test
-				System.out.println("Running operations " + SIZE + " times each");
 				GM_Test();
 				// Paillier_Test();
 				// DGK_Test();

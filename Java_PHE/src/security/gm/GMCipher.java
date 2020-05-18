@@ -117,7 +117,6 @@ public class GMCipher extends CipherSpi implements CipherConstants
 			BigInteger b = new BigInteger(c_i);
 			c.add(b);
 		}
-		System.out.println("Cipher bits -- D");
 		byte [] messageBytes = decrypt(c, key).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
@@ -416,7 +415,6 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	        	enc_bits.add(x.modPow(TWO, pk.n));
 	        }
 	    }
-	    System.out.println(" ");
 	    return enc_bits;
 	}
 	

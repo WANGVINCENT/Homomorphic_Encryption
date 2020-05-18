@@ -26,19 +26,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-/*
-Credits to Andrew Quijano and Dr. Samet Tonyali
-Terms of Use:
-Feel free to use this code as you like.
-DGK was created in 2007 by:
-Ivan Damgard, Martin Geisler, and Mikkel Kroigaard (DGK).
-Title of Papers: (Source of Protocol 1, Protocol 2)
-Efficient and Secure Comparison for On-Line auctions (2007)
-A correction to Efficient and Secure Comparison for Online auctions (2009)
-Protocol 3 and Protocol 4 was created referencing Thjis Veugen's Paper:
-Improving the DGK Comparison Protocol (2012)
-*/
-
 enum Algorithm
 {
     INSERT_SORT, MERGE_SORT, QUICK_SORT, BUBBLE_SORT;
