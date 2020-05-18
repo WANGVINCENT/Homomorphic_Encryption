@@ -1,4 +1,4 @@
-package security.paillier;
+package security.gm;
 
 import java.math.BigInteger;
 import java.security.AlgorithmParameters;
@@ -11,6 +11,9 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
 
+import security.generic.CipherConstants;
+import security.generic.NTL;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherSpi;
@@ -18,14 +21,10 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
-import security.paillier.PaillierPublicKey;
-import security.generic.NTL;
-import security.paillier.PaillierPrivateKey;
-
-public final class PaillierCipher extends CipherSpi
+public class GMCipher extends CipherSpi implements CipherConstants
 {
 	protected int stateMode;
-	protected Key keyPaillier;
+	protected Key keyGM;
 	protected SecureRandom SECURE_RANDOM;
 	protected int plaintextSize;
 	protected int ciphertextSize;
@@ -72,10 +71,14 @@ public final class PaillierCipher extends CipherSpi
 			byte[] output, int outputOffset) throws Exception
 	{
 		BigInteger m = new BigInteger(input);
-
+		
 		// get the public key in order to encrypt
-		byte [] cBytes = encrypt(m, (PaillierPublicKey) keyPaillier).toByteArray();
-		System.arraycopy(cBytes, 0, output, ciphertextSize - cBytes.length, cBytes.length);
+		List<BigInteger> c = encrypt(m, (GMPublicKey) keyGM);
+		for (int i = c.size() - 1; i != -1; i--)
+		{
+			byte [] c_i = c.get(i).toByteArray();
+			System.arraycopy(c_i, 0, output, output.length - (plaintextSize * i) - c_i.length, c_i.length);
+		}
 		return ciphertextSize;
 	}
 
@@ -98,14 +101,23 @@ public final class PaillierCipher extends CipherSpi
 	protected final int decrypt(byte[] input, int inputOffset, int inputLenth,
 			byte[] output, int outputOffset)
 	{
-		PaillierPrivateKey key = (PaillierPrivateKey) keyPaillier;
+		GMPrivateKey key = (GMPrivateKey) keyGM;
 
 		// extract c
 		byte[] cBytes = new byte[input.length];
 		System.arraycopy(input, inputOffset, cBytes, 0, input.length);
 		
-		// calculate the message
-		byte[] messageBytes = decrypt(new BigInteger(cBytes), key).toByteArray();
+		// Get list of BigIntegers from bytes
+		List<BigInteger> c = new ArrayList<BigInteger>();
+		int num_bits = input.length/plaintextSize;
+		for(int i = num_bits - 1; i != -1;i--)
+		{
+			byte [] c_i = new byte[plaintextSize];
+			System.arraycopy(cBytes, i * ciphertextSize, c_i, 0, c_i.length);
+			BigInteger b = new BigInteger(c_i);
+			c.add(b);
+		}
+		byte [] messageBytes = decrypt(c, key).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
 		return plaintextSize;
@@ -147,7 +159,8 @@ public final class PaillierCipher extends CipherSpi
 	 */
 	protected final byte[] engineUpdate(byte[] input, int inputOffset, int inputLen) 
 	{
-		byte[] out = new byte[engineGetOutputSize(inputLen)];
+		int num_bits = new BigInteger(input).bitLength();
+		byte [] out = new byte[engineGetOutputSize(num_bits)];
 		try 
 		{
 			 engineUpdate(input, inputOffset, inputLen, out, 0);
@@ -207,8 +220,8 @@ public final class PaillierCipher extends CipherSpi
 	protected final byte[] engineDoFinal(byte[] input, int inputOffset, int inputLen)
 			throws IllegalBlockSizeException, BadPaddingException
 	{
-
-		byte [] out = new byte[engineGetOutputSize(inputLen)];
+		int num_bits = new BigInteger(input).bitLength();
+		byte [] out = new byte[engineGetOutputSize(num_bits)];
 		try 
 		{
 			engineDoFinal(input, inputOffset, inputLen, out, 0);
@@ -274,11 +287,11 @@ public final class PaillierCipher extends CipherSpi
 	{
 		if (stateMode == Cipher.DECRYPT_MODE)
 		{
-			return ciphertextSize ;
+			return ciphertextSize;
 		}
 		else
 		{
-			return plaintextSize ;
+			return plaintextSize;
 		}
 	}
 
@@ -297,12 +310,12 @@ public final class PaillierCipher extends CipherSpi
 	 *            the input length (in bytes)
 	 * @return outLength - the required output size (in bytes)
 	 */
-	protected final int engineGetOutputSize(int inputLen)
+	protected final int engineGetOutputSize(int num_bits)
 	{
 		if (stateMode == Cipher.ENCRYPT_MODE) 
 		{
-			return ciphertextSize;
-		} 
+			return plaintextSize * num_bits;
+		}
 		else 
 		{
 			return plaintextSize;
@@ -322,16 +335,16 @@ public final class PaillierCipher extends CipherSpi
 	{
 		if (mode == Cipher.ENCRYPT_MODE)
 		{
-			if (!(key instanceof PaillierPublicKey))
+			if (!(key instanceof GMPublicKey))
 			{
-				throw new InvalidKeyException("I didn't get a PaillierPublicKey!");
+				throw new InvalidKeyException("I didn't get a GMPublicKey!");
 			}
 		}
 		else if (mode == Cipher.DECRYPT_MODE)
 		{
-			if (!(key instanceof PaillierPrivateKey))
+			if (!(key instanceof GMPrivateKey))
 			{
-				throw new InvalidKeyException("I didn't get a PaillierPrivateKey!");
+				throw new InvalidKeyException("I didn't get a GMPrivateKey!");
 			}
 		}		
 		else
@@ -339,9 +352,9 @@ public final class PaillierCipher extends CipherSpi
 			throw new IllegalArgumentException("Bad mode: " + mode);
 		}
 		this.stateMode = mode;
-		this.keyPaillier = key;
+		this.keyGM = key;
 		this.SECURE_RANDOM = random;
-		int modulusLength = ((PaillierKey) key).getN().bitLength();
+		int modulusLength = ((GMKey) key).getN().bitLength();
 		calculateBlockSizes(modulusLength);
 	}
 
@@ -361,18 +374,18 @@ public final class PaillierCipher extends CipherSpi
 	 */
 	protected final void calculateBlockSizes(int modulusLength)
 	{
-		plaintextSize = ((modulusLength + 8) / 8);
-		ciphertextSize = (((modulusLength + 12) / 8) * 2) - 1;
+		plaintextSize = ((modulusLength + 8) / 8); // is N big
+		ciphertextSize = ((modulusLength + 8) / 8);// is N * number of bits in N, leave equal for now
 	}
 	
 	// -------------------------PUBLIC FACING METHODS---------------------------------
-	public void init(int encryptMode, PaillierPublicKey pk) 
+	public void init(int encryptMode, GMPublicKey pk) 
 			throws InvalidKeyException, InvalidAlgorithmParameterException
 	{
 		engineInit(encryptMode, pk, new SecureRandom());
 	}
 
-	public void init(int decryptMode, PaillierPrivateKey sk)
+	public void init(int decryptMode, GMPrivateKey sk)
 			throws InvalidKeyException, InvalidAlgorithmParameterException 
 	{
 		engineInit(decryptMode, sk, new SecureRandom());
@@ -383,201 +396,59 @@ public final class PaillierCipher extends CipherSpi
 	{
 		return engineDoFinal(bytes, 0, bytes.length);	
 	}
-
-	//-----------------------BigInteger Paillier----------------------------------------------
-
-    // Compute ciphertext = (mn+1)r^n (mod n^2) in two stages: (mn+1) and (r^n).
-    public static BigInteger encrypt(BigInteger plaintext, PaillierPublicKey pk) 
-    {
-		if (plaintext.signum() == -1)
-		{
-			throw new IllegalArgumentException("Encryption Invalid Parameter: the plaintext is not in Zu (plaintext < 0)"
-					+ " value of Plain Text is: " + plaintext);
-		}
-		else if (plaintext.compareTo(pk.n) >= 0)
-		{
-			throw new IllegalArgumentException("Encryption Invalid Parameter: the plaintext is not in N"
-					+ " (plaintext >= N) value of Plain Text is: " + plaintext);
-		}
-		
-        //BigInteger randomness = new BigInteger(pk.keysize, rnd);
-        BigInteger randomness = NTL.RandomBnd(pk.n);
-        //BigInteger tmp1 = plaintext.multiply(pk.n).add(BigInteger.ONE).mod(pk.modulus);
-        BigInteger tmp1 = pk.g.modPow(plaintext, pk.modulus);
-        BigInteger tmp2 = randomness.modPow(pk.n, pk.modulus);
-        BigInteger ciphertext = NTL.POSMOD(tmp1.multiply(tmp2), pk.modulus);
-        return ciphertext;
-    }
-    
-    public static BigInteger encrypt(long plaintext, PaillierPublicKey pk) 
-    {
-    	return PaillierCipher.encrypt(BigInteger.valueOf(plaintext), pk);
-    }
-
-    // Compute plaintext = L(c^(lambda) mod n^2) * mu mod n
-    public static BigInteger decrypt(BigInteger ciphertext, PaillierPrivateKey sk)
-    {
-		if (ciphertext.signum() == -1)
-		{
-			throw new IllegalArgumentException("decryption Invalid Parameter : the cipher text is not in Zn, "
-					+ "value of cipher text is: (c < 0): " + ciphertext);
-		}
-		else if (ciphertext.compareTo(sk.modulus) == 1)
-		{
-			throw new IllegalArgumentException("decryption Invalid Parameter : the cipher text is not in Zn,"
-					+ " value of cipher text is: (c > n): " + ciphertext);
-		}
-        //BigInteger plaintext = L(ciphertext.modPow(sk.lambda, sk.modulus), sk.n).multiply(sk.mu).mod(sk.n);
-        BigInteger plaintext = L(ciphertext.modPow(sk.lambda, sk.modulus), sk.n).multiply(sk.rho).mod(sk.n);
-        return plaintext;
-    }
-
-    // On input two encrypted values, returns an encryption of the sum of the
-    // values
-    public static BigInteger add(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk)
-    {
-        BigInteger ciphertext = ciphertext1.multiply(ciphertext2).mod(pk.modulus);
-        return ciphertext;
-    }
-    
-    public static BigInteger add_plaintext(BigInteger ciphertext, BigInteger plaintext, PaillierPublicKey pk)
-    {
-        BigInteger new_ciphertext = ciphertext.multiply(pk.g.modPow(plaintext, pk.modulus)).mod(pk.modulus);
-        return new_ciphertext;
-    }
-    
-    public static BigInteger add_plaintext(BigInteger ciphertext, long plaintext, PaillierPublicKey pk)
-    {
-        BigInteger new_ciphertext = ciphertext.multiply(pk.g.modPow(BigInteger.valueOf(plaintext), pk.modulus)).mod(pk.modulus);
-        return new_ciphertext;
-    }
-    
-    public static BigInteger subtract(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk)
-    {
-    	BigInteger neg_ciphertext2 = PaillierCipher.multiply(ciphertext2, pk.n.subtract(BigInteger.ONE), pk);
-		BigInteger ciphertext = ciphertext1.multiply(neg_ciphertext2).mod(pk.modulus);
-		return ciphertext;
-    }
-    
-    // On input an encrypted value [[x]] and a scalar c, returns an encryption of [[cx]].
-    // For now, I will permit negative number multiplication, especially for SST REU 2017
-    public static BigInteger multiply(BigInteger ciphertext1, BigInteger scalar, PaillierPublicKey pk)
-    {
-        BigInteger ciphertext = ciphertext1.modPow(scalar, pk.modulus);
-        return ciphertext;
-    }
-
-    public static BigInteger multiply(BigInteger ciphertext1, long scalar, PaillierPublicKey pk) 
-    {
-        return multiply(ciphertext1, BigInteger.valueOf(scalar), pk);
-    }
-    
-    // L(u) = (u - 1)/n
-    protected static BigInteger L(BigInteger u, BigInteger n) 
-    {
-        return u.subtract(BigInteger.ONE).divide(n);
-    }
-    
-	public static BigInteger sum(BigInteger [] values, PaillierPublicKey pk)
+	//------------------------------------------Original BigInteger Code----------------------------------------
+	public static List<BigInteger> encrypt(BigInteger m, GMPublicKey pk)
 	{
-		BigInteger sum = PaillierCipher.encrypt(BigInteger.ZERO, pk);
-		for (int i = 0; i < values.length; i++)
-		{
-			sum = PaillierCipher.add(sum, values[i], pk);
-		}
-		return sum;
+		List<BigInteger> enc_bits = new ArrayList<BigInteger>();  
+	    char [] bit_array = m.toString(2).toCharArray();
+	    BigInteger x = null;
+	    // Encrypt bits
+	    for(char bit : bit_array)
+	    {
+	    	x = NTL.RandomBnd(pk.n);
+	        if (bit == '1')
+	        {
+	        	enc_bits.add(pk.y.multiply(x.modPow(TWO, pk.n)).mod(pk.n));
+	        }
+	        else
+	        {
+	        	enc_bits.add(x.modPow(TWO, pk.n));
+	        }
+	    }
+	    return enc_bits;
 	}
 	
-	public static BigInteger sum(BigInteger [] values, PaillierPublicKey pk, int limit)
+	public static BigInteger decrypt(List<BigInteger> cipher, GMPrivateKey sk)
 	{
-		if (limit > values.length)
+		BigInteger e = null;
+		String bits = "";
+		for (BigInteger enc_bit: cipher)
 		{
-			return sum(values, pk);
+			e = NTL.jacobi(enc_bit, sk.p);
+			if (e.equals(BigInteger.ONE))
+			{
+				bits += "0";
+			}
+			else
+			{
+				bits += "1";
+			}
 		}
-		BigInteger sum = PaillierCipher.encrypt(BigInteger.ZERO, pk);
-		if (limit <= 0)
-		{
-			return sum;
-		}
-		for (int i = 0; i < limit; i++)
-		{
-			sum = PaillierCipher.add(sum, values[i], pk);
-		}
-		return sum;
+	    return new BigInteger(bits, 2);
 	}
 	
-	public static BigInteger summation(ArrayList<BigInteger> values, PaillierPublicKey pk)
+	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
+	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk)
 	{
-		BigInteger sum = PaillierCipher.encrypt(BigInteger.ZERO, pk);
-		for (int i = 0; i < values.size(); i++)
+		if(cipher_1.length != cipher_2.length)
 		{
-			sum = PaillierCipher.add(sum, values.get(i), pk);
+			throw new IllegalArgumentException("Unequal Size of Ciphertext for XOR!");
 		}
-		return sum;
+		BigInteger [] xor_solution = new BigInteger[cipher_1.length];
+		for (int i = 0; i < cipher_1.length; i++)
+		{
+			xor_solution[i] = cipher_1[i].multiply(cipher_2[i]).mod(pk.n);
+		}
+		return xor_solution;
 	}
-	
-	public static BigInteger summation(ArrayList<BigInteger> values, PaillierPublicKey pk, int limit)
-	{
-		if (limit > values.size())
-		{
-			return summation(values, pk);
-		}
-		BigInteger sum = PaillierCipher.encrypt(BigInteger.ZERO, pk);
-		if (limit <= 0)
-		{
-			return sum;
-		}
-		for (int i = 0; i < limit; i++)
-		{
-			sum = PaillierCipher.add(sum, values.get(i), pk);
-		}
-		return sum;
-	}
-	
-	public static BigInteger sum_product (PaillierPublicKey pk, List<BigInteger> cipher, List<Long> plain)
-	{
-		if(cipher.size() != plain.size())
-		{
-			throw new IllegalArgumentException("Arrays are NOT the same size!");
-		}
-		
-		BigInteger [] product_vector = new BigInteger[cipher.size()];
-		for (int i = 0; i < product_vector.length; i++)
-		{
-			product_vector[i] = PaillierCipher.multiply(cipher.get(i), plain.get(i), pk);
-		}
-		return sum(product_vector, pk);
-	}
-	
-	public static BigInteger sum_product (PaillierPublicKey pk, BigInteger[] cipher, Long[] plain)
-	{
-		if(cipher.length != plain.length)
-		{
-			throw new IllegalArgumentException("Arrays are NOT the same size!");
-		}
-		
-		BigInteger [] product_vector = new BigInteger[cipher.length];
-		for (int i = 0; i < product_vector.length; i++)
-		{
-			product_vector[i] = PaillierCipher.multiply(cipher[i], plain[i], pk);
-		}
-		return sum(product_vector, pk);
-	}
-	/*
-	 * Please note: Divide will only work correctly on perfect divisor
-	 * 2|20, it will work.
-	 * if you try 3|20, it will NOT work and you will get a wrong answer!
-	 * 
-	 * If you want to do 3|20, you MUST use a division protocol from Veugen paper
-	 */
-	public static BigInteger divide(BigInteger ciphertext, long divisor, PaillierPublicKey pk)
-	{
-		return divide(ciphertext, BigInteger.valueOf(divisor), pk);
-	}
-	
-	public static BigInteger divide(BigInteger ciphertext, BigInteger divisor, PaillierPublicKey pk)
-	{
-		return multiply(ciphertext, divisor.modInverse(pk.modulus), pk);
-	}
-	
 }

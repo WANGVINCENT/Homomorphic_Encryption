@@ -43,8 +43,6 @@ import java.util.ArrayList;
 
 public final class DGKOperations extends CipherSpi
 {
-	protected final static BigInteger TWO = new BigInteger("2");
-	
 	protected int stateMode;
 	protected Key keyDGK;
 	protected SecureRandom SECURE_RANDOM;
@@ -92,9 +90,6 @@ public final class DGKOperations extends CipherSpi
 	protected final int encrypt(byte[] input, int inputOffset, int inputLenth,
 			byte[] output, int outputOffset) throws Exception
 	{
-		byte[] messageBytes = new byte[plaintextSize];
-		int inLenth = Math.min(plaintextSize, inputLenth);
-		System.arraycopy(input, inputOffset, messageBytes, 0, inLenth);
 		BigInteger m = new BigInteger(input);
 
 		// get the public key in order to encrypt

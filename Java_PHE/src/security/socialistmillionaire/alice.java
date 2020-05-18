@@ -13,6 +13,7 @@ import security.DGK.DGKPublicKey;
 import security.elgamal.ElGamalCipher;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamal_Ciphertext;
+import security.generic.CipherConstants;
 import security.generic.NTL;
 import security.paillier.PaillierCipher;
 import security.paillier.PaillierPublicKey;
@@ -996,7 +997,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger N = e_pk.getP().subtract(BigInteger.ONE);
 		
 		// Step 1: 0 <= r < N
-		r = NTL.RandomBnd(e_pk.FIELD_SIZE);
+		r = NTL.RandomBnd(CipherConstants.FIELD_SIZE);
 		
 		/*
 		 * Step 2: Alice computes [[z]] = [[x - y + 2^l + r]]
@@ -1126,7 +1127,6 @@ public final class alice extends socialist_millionaires implements Runnable
 	 * Constraints: 0 <= x <= N * 2^{-sigma} and 0 <= d < N
 	 */
 	
-	// TODO: Patch to support x being (0, N]
 	public BigInteger division(BigInteger x, long d) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
@@ -1353,7 +1353,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		ElGamal_Ciphertext y_prime = null;
 		BigInteger a = null;
 		BigInteger b = null;
-		BigInteger N = e_pk.FIELD_SIZE;
+		BigInteger N = CipherConstants.FIELD_SIZE;
 		
 		// Step 1
 		a = NTL.RandomBnd(N);

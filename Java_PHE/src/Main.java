@@ -64,7 +64,7 @@ public class Main
 	private static BigInteger [] high = generate_high();
 	
 	private static final int TEST = 100;
-	private static final int SIZE = 100000;
+	private static final int SIZE = 100;
 	private static final int KEY_SIZE = 1024;
 	private static final int BILLION = BigInteger.TEN.pow(9).intValue();
 	
@@ -136,28 +136,21 @@ public class Main
 				gm_pk = (GMPublicKey) gm.getPublic();
 				gm_sk = (GMPrivateKey) gm.getPrivate();
 				
-				ElGamal_Ciphertext t = ElGamalCipher.encrypt(e_pk, 1000);
-				//ElGamal_Ciphertext t_2 = ElGamalCipher.add(ElGamalCipher.encrypt(e_pk, BigInteger.TEN.modInverse(e_pk.p)), t, e_pk);
-				ElGamal_Ciphertext t_2 = ElGamalCipher.subtract(t, ElGamalCipher.encrypt(e_pk, 10), e_pk);
-				System.out.println(ElGamalCipher.decrypt(e_sk, t_2));
-				test_signature();
-				
-				// start with GM: BUGS!
-				List<BigInteger> enc_bits = GMCipher.encrypt(BigInteger.TEN, gm_pk);
-				System.out.println("GM: " + GMCipher.decrypt(enc_bits, gm_sk));
+				//test_signature();
 				
 				// Stress Test
-				// System.out.println("Running operations 100,000 times each");
+				System.out.println("Running operations " + SIZE + " times each");
+				GM_Test();
 				// Paillier_Test();
 				// DGK_Test();
-				// ElGamal_Test();
+				//ElGamal_Test();
 				System.exit(0);
 				
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
 				andrew = new bob(bob_client, pe, DGK, el_gamal);
-	
+				
 				// Test Protocol 1 - 4 functionality
 				bob_demo();
 				bob_ElGamal();
@@ -196,8 +189,14 @@ public class Main
 			{
 				try 
 				{
-					bob_client.close();
-					bob_socket.close();
+					if(bob_client != null)
+					{
+						bob_client.close();
+					}
+					if(bob_socket != null)
+					{
+						bob_socket.close();
+					}
 				}
 				catch (IOException e) 
 				{
@@ -1095,7 +1094,7 @@ public class Main
 		System.out.println("START ELGAMAL TESTING!");
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
-		{
+		{	
 			ElGamalCipher.encrypt(e_pk, t);
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
@@ -1123,5 +1122,30 @@ public class Main
 			temp = ElGamalCipher.multiply(temp, t, e_pk);
 		}
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+	}
+	
+	// ElGamal Testing
+	public static void GM_Test()
+	{		
+		// Encrypt
+		BigInteger t = NTL.generateXBitRandom(15);
+		List<BigInteger> enc_t = GMCipher.encrypt(t, gm_pk);
+		long start = 0;
+
+		System.out.println("GOLDWASSER-MICALI TESTING!");
+		start = System.nanoTime();
+		for(int i = 0; i < SIZE; i++)
+		{
+			GMCipher.encrypt(t, gm_pk);
+		}
+		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+
+		// Decrypt
+		start = System.nanoTime();
+		for(int i = 0; i < SIZE; i++)
+		{
+			GMCipher.decrypt(enc_t, gm_sk);
+		}
+		System.out.println("Time to complete decryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
 }

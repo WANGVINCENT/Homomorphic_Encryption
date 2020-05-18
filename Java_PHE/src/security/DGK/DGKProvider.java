@@ -12,6 +12,6 @@ public class DGKProvider extends Provider
 		 super("DGK", 1.0, "DGK v1.0");
 		 put("KeyPairGenerator.DGK", DGKKeyPairGenerator.class.getName());
 		 put("Cipher.DGK", DGKOperations.class.getName());
-		 //put("KeyFactory.DGK", DGKKeyFactory.class.getName());
+		 // put("KeyFactory.DGK", DGKKeyFactory.class.getName());
 	}
 }

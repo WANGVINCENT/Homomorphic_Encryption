@@ -5,18 +5,17 @@ import java.security.KeyPair;
 import java.security.KeyPairGeneratorSpi;
 import java.security.SecureRandom;
 
+import security.generic.CipherConstants;
 import security.generic.NTL;
 
-public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi
+public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements CipherConstants
 {
-	protected static final BigInteger TWO = new BigInteger("2");
 	// Default parameters
 	private int l = 16;
 	private int t = 160;
 	private int k = 1024;
 	private boolean no_skip_public_key_maps = true;
 	private SecureRandom rnd = null;
-	private final static int CERTAINTY = 40;
 	
 	public DGKKeyPairGenerator(int l, int t, int k)
 	{
@@ -156,7 +155,7 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi
 		BigInteger q, rq;
 		BigInteger g, h ;
 		BigInteger n, r ;
-		BigInteger u = new BigInteger("2").pow(this.l);
+		BigInteger u = TWO.pow(this.l);
 		BigInteger vp, vq, vpvq, tmp;
 
 		while(true)
@@ -354,13 +353,11 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi
 		{
 			pubKey.run();
 		}
-		System.out.println("FINISHED WITH DGK KEY GENERATION in " + (System.nanoTime() - start_time)/1000000000 + " seconds!");
 		
-		//System.out.println(h.modPow(vp.multiply(vq), n));
-		//System.out.println(g.modPow(vp.multiply(vq).multiply(u), n));
+		System.out.println("FINISHED WITH DGK KEY GENERATION in " + (System.nanoTime() - start_time)/BILLION + " seconds!");
 		return new KeyPair(pubKey, privkey);
 	}
-	
+
 	public String toString()
 	{
 		String s = "";
