@@ -111,41 +111,8 @@ public final class bob extends socialist_millionaires implements Runnable
 				throw new IllegalArgumentException("Third Keypair MUST BE AN EL GAMAL KEY PAIR!");
 			}
 		}
-
 		this.sendPublicKeys();
 		powL = TWO.pow(pubKey.getL());
-	}
-
-	// Get/Set Fast Divide/Protocol 2
-	public boolean getProtocol2()
-	{
-		return USE_PROTOCOL_2;
-	}
-		
-	public boolean getFastDivide()
-	{
-		return FAST_DIVIDE;
-	}
-		
-	public boolean isDGK()
-	{
-		return isDGK;
-	}
-	
-	// Get PublicKey
-	public PaillierPublicKey getPaillierPublicKey()
-	{
-		return pk;
-	}
-	
-	public DGKPublicKey getDGKPublicKey()
-	{
-		return pubKey;
-	}
-	
-	public ElGamalPublicKey getElGamalPublicKey()
-	{
-		return e_pk;
 	}
 	
 	// Get Private Key

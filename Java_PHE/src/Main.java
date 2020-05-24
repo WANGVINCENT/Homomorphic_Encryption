@@ -89,7 +89,7 @@ public class Main
 				Niu = new alice(new Socket("192.168.1.208", 9254));
 				
 				// TO BE CONSISTENT I NEED TO USE KEYS FROM BOB!
-				pk = Niu.getPaiilierPublicKey();
+				pk = Niu.getPaillierPublicKey();
 				pubKey = Niu.getDGKPublicKey();
 				e_pk = Niu.getElGamalPublicKey();
 				

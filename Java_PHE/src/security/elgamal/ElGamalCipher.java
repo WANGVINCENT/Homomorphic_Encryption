@@ -45,7 +45,7 @@ public class ElGamalCipher extends CipherSpi
 	protected final void engineSetMode(String mode)
 			throws NoSuchAlgorithmException 
 	{
-		throw new NoSuchAlgorithmException("Paillier supports no modes.");
+		throw new NoSuchAlgorithmException("ElGamal supports no modes.");
 	}
 
 	/**
@@ -55,7 +55,7 @@ public class ElGamalCipher extends CipherSpi
 	protected final void engineSetPadding(String padding)
 			throws NoSuchPaddingException 
 	{
-		throw new NoSuchPaddingException("Paillier supports no padding.");
+		throw new NoSuchPaddingException("ElGamal supports no padding.");
 	}
 
 	/**
