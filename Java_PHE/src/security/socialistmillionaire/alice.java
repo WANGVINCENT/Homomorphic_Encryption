@@ -88,37 +88,6 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 	}
 	
-	// Get/Set Fast Divide/Protocol 2
-	public boolean getProtocol2()
-	{
-		return USE_PROTOCOL_2;
-	}
-		
-	public boolean getFastDivide()
-	{
-		return FAST_DIVIDE;
-	}
-		
-	public void setFastDivide(boolean FAST_DIVIDE)
-	{
-		this.FAST_DIVIDE = FAST_DIVIDE;
-	}
-		
-	public void setProtocol2(boolean USE_PROTOCOL_2)
-	{
-		this.USE_PROTOCOL_2 = USE_PROTOCOL_2;
-	}
-
-	public boolean isDGK()
-	{
-		return isDGK;
-	}
-	
-	public void setDGKMode(boolean isDGK)
-	{
-		this.isDGK = isDGK;
-	}
-	
 	public void setSorting(List<BigInteger> toSort)
 	{
 		this.toSort = toSort.toArray(new BigInteger[toSort.size()]);
@@ -132,21 +101,6 @@ public final class alice extends socialist_millionaires implements Runnable
 	public BigInteger [] getSortedArray()
 	{
 		return sortedArray;
-	}
-	
-	public PaillierPublicKey getPaiilierPublicKey()
-	{
-		return pk;
-	}
-	
-	public DGKPublicKey getDGKPublicKey()
-	{
-		return pubKey;
-	}
-	
-	public ElGamalPublicKey getElGamalPublicKey()
-	{
-		return e_pk;
 	}
 
 	public boolean Protocol1(BigInteger x) 

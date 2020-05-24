@@ -438,7 +438,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	}
 	
 	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
-	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk)
+	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk) throws IllegalArgumentException
 	{
 		if(cipher_1.length != cipher_2.length)
 		{

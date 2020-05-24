@@ -135,53 +135,6 @@ public final class bob extends socialist_millionaires implements Runnable
 			this.debug();
 		}
 	}
-
-	// Get/Set Fast Divide/Protocol 2
-	public boolean getProtocol2()
-	{
-		return USE_PROTOCOL_2;
-	}
-		
-	public boolean getFastDivide()
-	{
-		return FAST_DIVIDE;
-	}
-		
-	public void setFastDivide(boolean FAST_DIVIDE)
-	{
-		this.FAST_DIVIDE = FAST_DIVIDE;
-	}
-		
-	public void setProtocol2(boolean USE_PROTOCOL_2)
-	{
-		this.USE_PROTOCOL_2 = USE_PROTOCOL_2;
-	}
-		
-	public boolean isDGK()
-	{
-		return isDGK;
-	}
-	
-	public void setDGKMode(boolean mode)
-	{
-		isDGK = mode;
-	}
-	
-	// Get PublicKey
-	public PaillierPublicKey getPaillierPublicKey()
-	{
-		return pk;
-	}
-	
-	public DGKPublicKey getDGKPublicKey()
-	{
-		return pubKey;
-	}
-	
-	public ElGamalPublicKey getElGamalPublicKey()
-	{
-		return e_pk;
-	}
 	
 	// Get Private Key
 	public PaillierPrivateKey getPaillierPrivateKey()

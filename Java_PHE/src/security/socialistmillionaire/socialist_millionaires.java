@@ -28,8 +28,51 @@ public abstract class socialist_millionaires
 	// Both use 2^l
     protected BigInteger powL;
     
+    // Set Methods
+    public void setProtocol2(boolean isProtocol2)
+    {
+    	this.USE_PROTOCOL_2 = isProtocol2;
+    }
+    
+    public void setFastDivide(boolean FAST_DIVIDE)
+    {
+    	this.FAST_DIVIDE = FAST_DIVIDE;
+    }
+    
     public void setDGKMode(boolean isDGK)
     {
     	this.isDGK = isDGK;
     }
+    
+	// Get Methods
+	public boolean getProtocol2()
+	{
+		return USE_PROTOCOL_2;
+	}
+		
+	public boolean getFastDivide()
+	{
+		return FAST_DIVIDE;
+	}
+
+	public boolean isDGK()
+	{
+		return isDGK;
+	}
+	
+	// Get PublicKey
+	public PaillierPublicKey getPaillierPublicKey()
+	{
+		return pk;
+	}
+	
+	public DGKPublicKey getDGKPublicKey()
+	{
+		return pubKey;
+	}
+	
+	public ElGamalPublicKey getElGamalPublicKey()
+	{
+		return e_pk;
+	}
 }
