@@ -26,17 +26,33 @@ import security.generic.NTL;
 // https://github.com/dlitz/pycrypto/blob/master/lib/Crypto/PublicKey/ElGamal.py
 public class ElGamalCipher extends CipherSpi
 {
-	private static final boolean ADDITIVE = false;
-	
 	protected int stateMode;
 	protected Key keyElGamal;
 	protected SecureRandom SECURE_RANDOM;
 	protected int plaintextSize;
 	protected int ciphertextSize;
-	
+
 	protected byte [] hrgm;
 	protected byte [] gr;
 	protected byte [] plaintext;
+
+	protected int engineGetOutputSize(int inputLen) 
+	{
+		if (stateMode == Cipher.ENCRYPT_MODE) 
+		{
+			return ciphertextSize;
+		} 
+		else 
+		{
+			return plaintextSize;
+		}
+	}
+
+	protected final void calculateBlockSizes(int modulusLength)
+	{
+		plaintextSize = ((modulusLength + 8) / 8);
+		ciphertextSize = (((modulusLength + 12) / 8) * 2);
+	}
 	
 	/**
 	 * This class support no modes, so engineSetMode() throw exception when
@@ -83,14 +99,14 @@ public class ElGamalCipher extends CipherSpi
 
 		// get the public key in order to encrypt
 		ElGamal_Ciphertext c = encrypt((ElGamalPublicKey) keyElGamal, m);
-		
+
 		// Convert to bytes!
 		gr = c.gr.toByteArray();
 		hrgm = c.hrgm.toByteArray();
 		// MAX 129 each size
 		System.arraycopy(gr, 0, output, ciphertextSize - ciphertextSize/2 - gr.length, gr.length);
 		System.arraycopy(hrgm, 0, output, ciphertextSize - hrgm.length, hrgm.length);
-		
+
 		plaintextSize = input.length;
 		ciphertextSize = gr.length + hrgm.length;
 		return ciphertextSize;
@@ -120,7 +136,7 @@ public class ElGamalCipher extends CipherSpi
 		BigInteger hrgm = null;
 		gr = new BigInteger(Arrays.copyOfRange(input, 0, 129));
 		hrgm = new BigInteger(Arrays.copyOfRange(input, 129, input.length));
-		
+
 		// calculate the message
 		byte [] messageBytes = decrypt((ElGamalPrivateKey) keyElGamal, new ElGamal_Ciphertext(gr, hrgm)).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
@@ -146,7 +162,7 @@ public class ElGamalCipher extends CipherSpi
 
 	protected final void engineInit(int opmode, Key key,
 			AlgorithmParameterSpec params, SecureRandom random)
-			throws InvalidKeyException, InvalidAlgorithmParameterException
+					throws InvalidKeyException, InvalidAlgorithmParameterException
 	{
 		engineInit(opmode, key, random);
 	}
@@ -234,7 +250,7 @@ public class ElGamalCipher extends CipherSpi
 		} 
 		catch (ShortBufferException sbe)
 		{
-			
+
 		}
 		return out;
 	}
@@ -348,7 +364,7 @@ public class ElGamalCipher extends CipherSpi
 	// --------------------------Relevant ElGamal---------------------------------------
 	public static ElGamal_Ciphertext encrypt(ElGamalPublicKey key, BigInteger message)
 	{
-		if(ADDITIVE)
+		if(key.ADDITIVE)
 		{
 			return Encrypt_Homomorph(key, message);
 		}
@@ -357,16 +373,16 @@ public class ElGamalCipher extends CipherSpi
 			return Encrypt(key, message);
 		}
 	}
-	
+
 	public static ElGamal_Ciphertext encrypt(ElGamalPublicKey key, long m)
 	{
 		BigInteger message = BigInteger.valueOf(m);
 		return encrypt(key, message);
 	}
-	
+
 	public static BigInteger decrypt(ElGamalPrivateKey key, ElGamal_Ciphertext gr_mhr)
 	{
-		if(ADDITIVE)
+		if(key.ADDITIVE)
 		{
 			return Decrypt_Homomorph(key, gr_mhr);	
 		}
@@ -375,7 +391,7 @@ public class ElGamalCipher extends CipherSpi
 			return Decrypt(key, gr_mhr);	
 		}
 	}
-	
+
 	/*
 	 * @param (p,g,h) public key
 	 * @param message message	
@@ -405,7 +421,7 @@ public class ElGamalCipher extends CipherSpi
 		BigInteger gm = key.g.modPow(message, key.p);
 		return new ElGamal_Ciphertext(key.g.modPow(r, key.p), hr.multiply(gm).mod(key.p));
 	}
-	
+
 	/*
 	 * Decrypt ElGamal
 	 *
@@ -431,7 +447,7 @@ public class ElGamalCipher extends CipherSpi
 		// g^m = (h^r * g^m) * (h^r)-1 (mod p) = g^m (mod p)
 		BigInteger gm = c.hrgm.multiply(hr.modInverse(key.p)).mod(key.p);
 		BigInteger m = key.LUT.get(gm);
-		
+
 		if (m != null)
 		{
 			// If I get this, there is a chance I might have a negative number to make?
@@ -446,71 +462,100 @@ public class ElGamalCipher extends CipherSpi
 			throw new IllegalArgumentException("Entry not found!");
 		}
 	}
-	
-	// --------------Additively Homomorphic Operations---------------------------
-	
-    // On input an encrypted value x and a scalar c
-	// IF ADDITIVE returns an encryption of cx.
-	// IF MULTIPLICATIVE r
-    public static ElGamal_Ciphertext multiply(ElGamal_Ciphertext ciphertext1, BigInteger scalar, ElGamalPublicKey pk)
-    {
-		ElGamal_Ciphertext answer = null;
-    	if(ADDITIVE)
-    	{
-        	answer = new ElGamal_Ciphertext(ciphertext1.gr.modPow(scalar, pk.p), ciphertext1.hrgm.modPow(scalar, pk.p));
-    	}
-    	else
-    	{
-    		// THROW ERROR?
-    		answer = new ElGamal_Ciphertext(ciphertext1.gr.modPow(scalar, pk.p), ciphertext1.hrgm.modPow(scalar, pk.p));
-    	}
-        return answer;
-    }
-    
-	public static ElGamal_Ciphertext multiply(ElGamal_Ciphertext ciphertext, long scalar, ElGamalPublicKey e_pk) 
+
+	// --------------BigInteger Homomorphic Operations---------------------------
+
+	public static ElGamal_Ciphertext multiply_scalar(ElGamal_Ciphertext ciphertext1, BigInteger scalar, ElGamalPublicKey pk)
 	{
-		return multiply(ciphertext, BigInteger.valueOf(scalar), e_pk);
-	}
-    
-    // On input two encrypted values, returns an encryption of the sum of the values
-    // Input is (<gr_1, mhr_1>, <gr_2, mhr_2>) --> (g^r, g^m * h^r)
-    // Output is (gr_1 * gr_2, mhr_1 * mhr_2)
-    public static ElGamal_Ciphertext add(ElGamal_Ciphertext ciphertext1, ElGamal_Ciphertext ciphertext2, ElGamalPublicKey pk)
-    {
-		ElGamal_Ciphertext answer = null;
-		if (ADDITIVE)
+		if(pk.ADDITIVE)
 		{
-			answer = new ElGamal_Ciphertext(ciphertext1.gr.multiply(ciphertext2.gr).mod(pk.p), 
-				ciphertext1.hrgm.multiply(ciphertext2.hrgm).mod(pk.p));
+			ElGamal_Ciphertext answer = null;
+			answer = new ElGamal_Ciphertext(ciphertext1.gr.modPow(scalar, pk.p), ciphertext1.hrgm.modPow(scalar, pk.p));
+			return answer;
 		}
 		else
 		{
-			// NOW YOU ARE GETTING THE PRODUCT NOT SUM OF CIPHER TEXT!
+			throw new IllegalArgumentException("Method is not permitted since ElGamal Cipher is using multiplicative mode!");
+		}
+	}
+	
+	public static ElGamal_Ciphertext multiply_scalar(ElGamal_Ciphertext ciphertext1, long scalar, ElGamalPublicKey pk)
+	{
+		return multiply_scalar(ciphertext1, BigInteger.valueOf(scalar), pk);
+	}
+	
+	public static ElGamal_Ciphertext multiply(ElGamal_Ciphertext ciphertext1, ElGamal_Ciphertext ciphertext2, ElGamalPublicKey pk)
+	{
+		if(pk.ADDITIVE)
+		{
+			throw new IllegalArgumentException("Method is not permitted since ElGamal Cipher is using additive mode!");			
+		}
+		else
+		{
+			ElGamal_Ciphertext answer = null;
 			answer = new ElGamal_Ciphertext(ciphertext1.gr.multiply(ciphertext2.gr).mod(pk.p), 
 					ciphertext1.hrgm.multiply(ciphertext2.hrgm).mod(pk.p));
+			return answer;	
 		}
-		return answer;
-    }
-    
-    public static ElGamal_Ciphertext subtract(ElGamal_Ciphertext ciphertext1, ElGamal_Ciphertext ciphertext2, ElGamalPublicKey pk)
-    {
-    	ElGamal_Ciphertext neg_ciphertext2 = null;
-    	ElGamal_Ciphertext ciphertext = null;
-    	if(ADDITIVE)
-    	{
-    		neg_ciphertext2 = ElGamalCipher.multiply(ciphertext2, -1, pk);
-    		ciphertext = ElGamalCipher.add(ciphertext1, neg_ciphertext2, pk);
-    	}
-    	else
-    	{
-    		neg_ciphertext2 = ElGamalCipher.multiply(ciphertext2, -1, pk);
-    		ciphertext = ElGamalCipher.add(ciphertext1, neg_ciphertext2, pk);
-    	}
-    	return ciphertext;
-    }
-	
+	}
+
+	public static ElGamal_Ciphertext divide(ElGamal_Ciphertext ciphertext1, ElGamal_Ciphertext ciphertext2, ElGamalPublicKey pk)
+	{
+		if(pk.ADDITIVE)
+		{
+			throw new IllegalArgumentException("Method is not permitted since ElGamal Cipher is using additive mode!");
+		}
+		else
+		{
+			ElGamal_Ciphertext neg_ciphertext2 = null;
+			ElGamal_Ciphertext ciphertext = null;
+			// Get mod inverse
+			BigInteger inv_gr = ciphertext2.gr.modInverse(pk.p);
+			BigInteger inv_mhr = ciphertext2.hrgm.modInverse(pk.p);
+			neg_ciphertext2 = new ElGamal_Ciphertext(inv_gr, inv_mhr);
+			// multiply
+			ciphertext = ElGamalCipher.multiply(ciphertext1, neg_ciphertext2, pk);
+			return ciphertext;	
+		}
+	}
+
+	public static ElGamal_Ciphertext add(ElGamal_Ciphertext ciphertext1, ElGamal_Ciphertext ciphertext2, ElGamalPublicKey pk)
+	{
+		if(pk.ADDITIVE)
+		{
+			ElGamal_Ciphertext answer = null;
+			answer = new ElGamal_Ciphertext(ciphertext1.gr.multiply(ciphertext2.gr).mod(pk.p), 
+					ciphertext1.hrgm.multiply(ciphertext2.hrgm).mod(pk.p));
+			return answer;	
+		}
+		else
+		{
+			throw new IllegalArgumentException("Method is not permitted since ElGamal Cipher is using multiplicative!");
+		}
+	}
+
+	public static ElGamal_Ciphertext subtract(ElGamal_Ciphertext ciphertext1, ElGamal_Ciphertext ciphertext2, ElGamalPublicKey pk)
+	{
+		if(pk.ADDITIVE)
+		{
+			ElGamal_Ciphertext neg_ciphertext2 = null;
+			ElGamal_Ciphertext ciphertext = null;
+			neg_ciphertext2 = ElGamalCipher.multiply_scalar(ciphertext2, -1, pk);
+			ciphertext = ElGamalCipher.add(ciphertext1, neg_ciphertext2, pk);
+			return ciphertext;
+		}
+		else
+		{
+			throw new IllegalArgumentException("Method is not permitted since ElGamal Cipher is using multiplicative!");
+		}
+	}
+
 	public static ElGamal_Ciphertext sum(List<ElGamal_Ciphertext> values, ElGamalPublicKey pk, int limit)
 	{
+		if (!pk.ADDITIVE)
+		{
+			return null;
+		}
 		ElGamal_Ciphertext sum = ElGamalCipher.encrypt(pk, BigInteger.ZERO);
 		if (limit <= 0)
 		{
@@ -532,9 +577,13 @@ public class ElGamalCipher extends CipherSpi
 		}
 		return sum;
 	}
-	
+
 	public static ElGamal_Ciphertext sum(ElGamal_Ciphertext [] values, ElGamalPublicKey pk, int limit)
 	{
+		if(pk.ADDITIVE)
+		{
+			return null;
+		}
 		ElGamal_Ciphertext sum = ElGamalCipher.encrypt(pk, BigInteger.ZERO);
 		if (limit <= 0)
 		{
@@ -556,33 +605,41 @@ public class ElGamalCipher extends CipherSpi
 		}
 		return sum;
 	}
-	
+
 	public static ElGamal_Ciphertext sum_product (ElGamalPublicKey pk, List<ElGamal_Ciphertext> cipher, List<Long> plain)
 	{
+		if(!pk.ADDITIVE)
+		{
+			return null;
+		}
 		if(cipher.size() != plain.size())
 		{
 			throw new IllegalArgumentException("Arrays are NOT the same size!");
 		}
-		
+
 		ElGamal_Ciphertext [] product_vector = new ElGamal_Ciphertext[cipher.size()];
 		for (int i = 0; i < product_vector.length; i++)
 		{
-			product_vector[i] = ElGamalCipher.multiply(cipher.get(i), plain.get(i), pk);
+			product_vector[i] = ElGamalCipher.multiply_scalar(cipher.get(i), plain.get(i), pk);
 		}
 		return ElGamalCipher.sum(product_vector, pk, product_vector.length);
 	}
-	
+
 	public static ElGamal_Ciphertext sum_product (ElGamalPublicKey pk, List<ElGamal_Ciphertext> cipher, Long [] plain)
 	{
+		if(!pk.ADDITIVE)
+		{
+			return null;
+		}
 		if(cipher.size() != plain.length)
 		{
 			throw new IllegalArgumentException("Arrays are NOT the same size!");
 		}
-		
+
 		ElGamal_Ciphertext [] product_vector = new ElGamal_Ciphertext[cipher.size()];
 		for (int i = 0; i < product_vector.length; i++)
 		{
-			product_vector[i] = ElGamalCipher.multiply(cipher.get(i), plain[i], pk);
+			product_vector[i] = ElGamalCipher.multiply_scalar(cipher.get(i), plain[i], pk);
 		}
 		return ElGamalCipher.sum(product_vector, pk, product_vector.length);
 	}
@@ -598,29 +655,11 @@ public class ElGamalCipher extends CipherSpi
 	{
 		engineInit(decryptMode, sk, new SecureRandom());
 	}
-	
+
 	public byte[] doFinal(byte[] bytes) 
 			throws BadPaddingException, IllegalBlockSizeException 
 	{
 		byte [] answer = engineDoFinal(bytes, 0, bytes.length);
 		return answer;
-	}
-
-	protected int engineGetOutputSize(int inputLen) 
-	{
-		if (stateMode == Cipher.ENCRYPT_MODE) 
-		{
-			return ciphertextSize;
-		} 
-		else 
-		{
-			return plaintextSize;
-		}
-	}
-	
-	protected final void calculateBlockSizes(int modulusLength)
-	{
-		plaintextSize = ((modulusLength + 8) / 8);
-		ciphertextSize = (((modulusLength + 12) / 8) * 2);
 	}
 }

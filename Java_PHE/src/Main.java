@@ -1118,7 +1118,7 @@ public class Main
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
-			temp = ElGamalCipher.multiply(temp, t, e_pk);
+			temp = ElGamalCipher.multiply_scalar(temp, t, e_pk);
 		}
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}

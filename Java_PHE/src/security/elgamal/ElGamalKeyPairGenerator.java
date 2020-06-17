@@ -13,6 +13,7 @@ public class ElGamalKeyPairGenerator extends KeyPairGeneratorSpi implements Ciph
 {
 	private int keysize = 1024;
 	private SecureRandom random = null;
+	private boolean ADDITIVE = false;
 	
 	public void initialize(int keysize, SecureRandom random) 
 	{
@@ -26,6 +27,7 @@ public class ElGamalKeyPairGenerator extends KeyPairGeneratorSpi implements Ciph
 		if(this.random == null)
 		{
 			random = new SecureRandom();
+			this.ADDITIVE = true;
 		}
 		
 		// (a) take a random prime p with getPrime() function. p = 2 * p' + 1 with prime(p') = true
@@ -75,8 +77,8 @@ public class ElGamalKeyPairGenerator extends KeyPairGeneratorSpi implements Ciph
 		BigInteger h = g.modPow(x, p);
 
 		// secret key is (p, x) and public key is (p, g, h)
-		ElGamalPrivateKey sk = new ElGamalPrivateKey(p, x, g, h);
-		ElGamalPublicKey pk = new ElGamalPublicKey(p, g, h);
+		ElGamalPrivateKey sk = new ElGamalPrivateKey(p, x, g, h, ADDITIVE);
+		ElGamalPublicKey pk = new ElGamalPublicKey(p, g, h, ADDITIVE);
 		return new KeyPair(pk, sk);
 	}
 
