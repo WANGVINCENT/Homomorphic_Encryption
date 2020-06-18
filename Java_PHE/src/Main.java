@@ -57,7 +57,7 @@ public class Main
 	private static Socket bob_client = null;
 	private static bob andrew = null;
 	private static alice Niu = null;
-	
+
 	// Get your test data...
 	private static BigInteger [] low = generate_low();
 	private static BigInteger [] mid = generate_mid();
@@ -142,9 +142,8 @@ public class Main
 				GM_Test();
 				// Paillier_Test();
 				// DGK_Test();
-				//ElGamal_Test();
-				System.exit(0);
-				
+				// ElGamal_Test();
+
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
@@ -236,7 +235,7 @@ public class Main
 			toSort[i] = NTL.generateXBitRandom(9);
 			t.add(ElGamalCipher.encrypt(e_pk, toSort[i]));
 		}
-		Niu.getKMin_ElGamal(t, 3);
+		Niu.getKMin(toSort, 3);
 	}
 	
 	public static void test_signature() throws InvalidKeyException, SignatureException
@@ -572,7 +571,7 @@ public class Main
 		
 		for(int i = 0; i < TEST; i++)
 		{
-			andrew.ElGamal_multiplication();
+			andrew.multiplication();
 		}
 		
 		for(int i = 0; i < TEST; i++)

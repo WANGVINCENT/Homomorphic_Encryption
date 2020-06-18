@@ -25,7 +25,7 @@ public interface CipherConstants
 	final static BigInteger EIGHT = new BigInteger("8");
 
 	// Misc
-	final static BigInteger neg_one = new BigInteger("-1");
+	final static BigInteger NEG_ONE = new BigInteger("-1");
 	
 	// For tracking time in nano-seconds to seconds
 	final int BILLION = BigInteger.TEN.pow(9).intValue();
