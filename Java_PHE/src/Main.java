@@ -4,6 +4,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
 import java.util.ArrayList;
@@ -63,8 +64,8 @@ public class Main
 	private static BigInteger [] mid = generate_mid();
 	private static BigInteger [] high = generate_high();
 	
-	private static final int TEST = 100;
-	private static final int SIZE = 100;
+	private static final int TEST = 100;    // Protocol 1-4 testing
+	private static final int SIZE = 100000; // Stress-Test
 	private static final int KEY_SIZE = 1024;
 	private static final int BILLION = BigInteger.TEN.pow(9).intValue();
 	
@@ -117,7 +118,9 @@ public class Main
 				
 				// Build Paillier Keys
 				PaillierKeyPairGenerator p = new PaillierKeyPairGenerator();
-				p.initialize(KEY_SIZE, null);
+				// NULL -> ADDITIVE
+				// NOT NULL -> MULTIPLICATIVE
+				p.initialize(KEY_SIZE, new SecureRandom());
 				KeyPair pe = p.generateKeyPair();
 				pk = (PaillierPublicKey) pe.getPublic();
 				sk = (PaillierPrivateKey) pe.getPrivate();
@@ -136,20 +139,18 @@ public class Main
 				gm_pk = (GMPublicKey) gm.getPublic();
 				gm_sk = (GMPrivateKey) gm.getPrivate();
 				
-				//test_signature();
-				
 				// Stress Test
 				GM_Test();
-				// Paillier_Test();
-				// DGK_Test();
-				// ElGamal_Test();
+				Paillier_Test();
+				DGK_Test();
+				ElGamal_Test();
 
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
 				andrew = new bob(bob_client, pe, DGK, el_gamal, true);
 				
-				// Test Protocol 1 - 4 functionality
+				// Show Protocol 1 - 4 functionality
 				bob_demo();
 				bob_ElGamal();
 				
@@ -235,71 +236,9 @@ public class Main
 			toSort[i] = NTL.generateXBitRandom(9);
 			t.add(ElGamalCipher.encrypt(e_pk, toSort[i]));
 		}
-		Niu.getKMin(toSort, 3);
+		Niu.getKMin_ElGamal(t, 3);
 	}
 	
-	public static void test_signature() throws InvalidKeyException, SignatureException
-	{
-		// Future Reference in saving keys...
-		// https://stackoverflow.com/questions/1615871/creating-an-x509-certificate-in-java-without-bouncycastle/2037663#2037663
-		// https://bfo.com/blog/2011/03/08/odds_and_ends_creating_a_new_x_509_certificate/
-		
-		System.out.println("The answer is always 42! Should only verify at 42!");
-		
-		// Initialize 
-		PaillierSignature p_sig = null;
-		DGKSignature d_sig = null;
-		ElGamalSignature g_sig = null;
-		byte [] cert = null;
-		
-		// Test Paillier
-		p_sig = new PaillierSignature();
-		p_sig.initSign(sk);
-		p_sig.update(new BigInteger("42").toByteArray());
-		cert = p_sig.sign();
-
-		for(int i = 0; i < 1000;i++)
-		{
-			p_sig.initVerify(pk);
-			p_sig.update(BigInteger.valueOf(i).toByteArray());
-			if(p_sig.verify(cert))
-			{
-				System.out.println("PAILLIER VALID AT: " + i);
-			}
-		}
-		
-		// Test DGK
-		d_sig = new DGKSignature();
-		d_sig.initSign(privKey);
-		d_sig.update(new BigInteger("42").toByteArray());
-		cert = d_sig.sign();
-
-		for(int i = 0; i < 1000;i++)
-		{
-			d_sig.initVerify(pubKey);
-			d_sig.update(BigInteger.valueOf(i).toByteArray());
-			if(d_sig.verify(cert))
-			{
-				System.out.println("DGK VALID AT: " + i);
-			}
-		}
-		
-		// Test ElGamal
-		g_sig = new ElGamalSignature();
-		g_sig.initSign(e_sk);
-		g_sig.update(new BigInteger("42").toByteArray());
-		cert = g_sig.sign();
-
-		for(int i = 0; i < 1000;i++)
-		{
-			g_sig.initVerify(e_pk);
-			g_sig.update(BigInteger.valueOf(i).toByteArray());
-			if(g_sig.verify(cert))
-			{
-				System.out.println("ELGAMAL VALID AT: " + i);
-			}
-		}
-	}
 	// ------------------------------------ Stress Test Protocol 1 - 4 DGK and Paillier-----------------------------------
 	
 	public static void alice_Paillier_Veugen() 
@@ -604,6 +543,18 @@ public class Main
 	
 	public static void alice_ElGamal() throws ClassNotFoundException, IOException
 	{
+		if(!e_pk.ADDITIVE)
+		{
+			// Addition
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("400")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("1000")));
+			// Subtract
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			return;
+		}
 		// Check the multiplication, ElGamal
 		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), 
 				ElGamalCipher.encrypt(e_pk, new BigInteger("2")));
@@ -634,6 +585,19 @@ public class Main
 	
 	public static void bob_ElGamal() throws ClassNotFoundException, IOException
 	{
+		if(!e_pk.ADDITIVE)
+		{
+			// Addition
+			andrew.addition(true);
+			andrew.addition(true);
+			andrew.addition(true);
+			// Subtract
+			andrew.addition(false);
+			andrew.addition(false);
+			andrew.addition(false);
+			return;
+		}
+		
 		for(int i = 0; i < 3; i++)
 		{
 			andrew.ElGamal_multiplication();
@@ -654,7 +618,6 @@ public class Main
 	}
 	
 	//---------------------Generate numbers-----------------------------------
-	// Original low
 	public static BigInteger [] generate_low()
 	{
 		BigInteger [] test_set = new BigInteger[16];
@@ -684,7 +647,6 @@ public class Main
 		return test_set;
 	}
 	
-	// Original Medium
 	public static BigInteger[] generate_mid()
 	{
 		BigInteger [] test_set = new BigInteger[16];
@@ -714,7 +676,6 @@ public class Main
 		return test_set;
 	}
 	
-	// Original High
 	public static BigInteger[] generate_high()
 	{
 		BigInteger [] test_set = new BigInteger[16];
@@ -975,14 +936,30 @@ public class Main
 	}
 	
 	// ----------------------------All Stress Test methods for Crypto-------------------------------------------------
-	// Paillier Test
-	public static void Paillier_Test()
+	public static void Paillier_Test() throws InvalidKeyException, SignatureException
 	{
-		System.out.println("PAILLIER TEST");
-		// Encrypt
+		System.out.println("-----------PAILLIER TEST--------------------------");
+		long start = 0;
+		
+		PaillierSignature sig = new PaillierSignature();
+		sig.initSign(sk);
+		sig.update(new BigInteger("42").toByteArray());
+		byte [] cert = sig.sign();
+
+		start = System.nanoTime();
+		for(int i = 0; i < SIZE;i++)
+		{
+			sig.initVerify(pk);
+			sig.update(BigInteger.valueOf(i).toByteArray());
+			if(sig.verify(cert))
+			{
+				System.out.println("PAILLIER VALID AT: " + i);
+			}
+		}
+		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+		
 		BigInteger base = PaillierCipher.encrypt(NTL.generateXBitRandom(15), pk);
 		BigInteger t = NTL.generateXBitRandom(15);
-		long start = 0;
 		
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -991,7 +968,6 @@ public class Main
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
-		// Decrypt
 		t = PaillierCipher.encrypt(NTL.generateXBitRandom(15), pk);
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -1000,15 +976,13 @@ public class Main
 		}
 		System.out.println("Time to complete decryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
-		// Add
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
 			PaillierCipher.add(base, t, pk);
 		}
 		System.out.println("Time to complete addition: " + ((System.nanoTime() - start)/BILLION) + " seconds");
-	
-		// Scalar Mult
+
 		t = NTL.generateXBitRandom(15);
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -1017,7 +991,6 @@ public class Main
 		}
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	
-		// Add Plain
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1026,16 +999,31 @@ public class Main
 		System.out.println("Time to complete addition (plaintext): " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
 	
-	// DGK Testing
-	public static void DGK_Test()
+	public static void DGK_Test() throws InvalidKeyException, SignatureException
 	{
-		System.out.println("DGK TEST");
+		System.out.println("-----------DGK TEST--------------------------");
 
-		// Encrypt
 		BigInteger base = DGKOperations.encrypt(pubKey, NTL.generateXBitRandom(15));
 		BigInteger t = NTL.generateXBitRandom(15);
 		long start = 0;
 		
+		DGKSignature sig = new DGKSignature();
+		sig.initSign(privKey);
+		sig.update(new BigInteger("42").toByteArray());
+		byte [] cert = sig.sign();
+
+		start = System.nanoTime();
+		for(int i = 0; i < SIZE;i++)
+		{
+			sig.initVerify(pubKey);
+			sig.update(BigInteger.valueOf(i).toByteArray());
+			if(sig.verify(cert))
+			{
+				System.out.println("DGK VALID AT: " + i);
+			}
+		}
+		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+			
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1043,7 +1031,6 @@ public class Main
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	
-		// Decrypt
 		t = DGKOperations.encrypt(pubKey, t);
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -1052,7 +1039,6 @@ public class Main
 		}
 		System.out.println("Time to complete decryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
-		// Add
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1060,7 +1046,6 @@ public class Main
 		}
 		System.out.println("Time to complete addition: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	
-		// Scalar Mult
 		long exp =  NTL.generateXBitRandom(15).longValue();
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -1069,27 +1054,41 @@ public class Main
 		}
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 
-		// Add Plain
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
 			DGKOperations.add_plaintext(pubKey, base, exp);
 		}
 		System.out.println("Time to complete addition (plaintext): " + ((System.nanoTime() - start)/BILLION) + " seconds");
-
 	}
 	
-	// ElGamal Testing
-	public static void ElGamal_Test()
-	{		
-		// Encrypt
+	public static void ElGamal_Test() throws SignatureException, InvalidKeyException
+	{
+		System.out.println("-----------EL-GAMAL TEST--------------------------");
+
 		ElGamal_Ciphertext base = ElGamalCipher.encrypt(e_pk, NTL.generateXBitRandom(15));
 		BigInteger t = NTL.generateXBitRandom(15);
 		ElGamal_Ciphertext temp = ElGamalCipher.encrypt(e_pk, t);
 		
 		long start = 0;
 		
-		System.out.println("START ELGAMAL TESTING!");
+		ElGamalSignature sig = new ElGamalSignature();
+		sig.initSign(e_sk);
+		sig.update(new BigInteger("42").toByteArray());
+		byte [] cert = sig.sign();
+
+		start = System.nanoTime();
+		for(int i = 0; i < SIZE;i++)
+		{
+			sig.initVerify(e_pk);
+			sig.update(BigInteger.valueOf(i).toByteArray());
+			if(sig.verify(cert))
+			{
+				System.out.println("ElGamal VALID AT: " + i);
+			}
+		}
+		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+		
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{	
@@ -1097,7 +1096,6 @@ public class Main
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
-		// Decrypt
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1105,7 +1103,6 @@ public class Main
 		}
 		System.out.println("Time to complete decryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
-		// Add
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1113,7 +1110,6 @@ public class Main
 		}
 		System.out.println("Time to complete addition: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
-		// Scalar Mult
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1122,15 +1118,13 @@ public class Main
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
 	
-	// ElGamal Testing
 	public static void GM_Test()
-	{		
-		// Encrypt
+	{
+		System.out.println("-----------GM TEST--------------------------");
 		BigInteger t = NTL.generateXBitRandom(15);
 		List<BigInteger> enc_t = GMCipher.encrypt(t, gm_pk);
 		long start = 0;
 
-		System.out.println("START GOLDWASSER-MICALI TESTING!");
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
