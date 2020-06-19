@@ -139,15 +139,25 @@ public final class alice extends socialist_millionaires implements Runnable
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
 			//Enc[x XOR y] = [y_i]
-			if (NTL.bit(x, i) == 0)
+			if (NTL.bit(x, i) == 1)
 			{
-				XOR[i] = Encrypted_Y[i];
+				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);	
 			}
 			//Enc[x XOR y] = [1] - [y_i]
 			else
 			{
+				XOR[i] = Encrypted_Y[i];
+			}
+			/*
+			if(x.testBit(i))
+			{
 				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
 			}
+			else
+			{
+				XOR[i] = Encrypted_Y[i];	
+			}
+			*/
 		}
 
 		// Step 3: Alice picks deltaA and computes S
@@ -414,16 +424,24 @@ public final class alice extends socialist_millionaires implements Runnable
 		XOR = new BigInteger[Encrypted_Y.length];
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
-			//Enc[x XOR y] = [y_i]
-			if (NTL.bit(x, i) == 0)
-			{
-				XOR[i] = Encrypted_Y[i];
-			}
-			//Enc[x XOR y] = [1] - [y_i]
-			else
+			if (NTL.bit(x, i) == 1)
 			{
 				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
 			}
+			else
+			{
+				XOR[i] = Encrypted_Y[i];
+			}
+			/*
+			if(x.testBit(i))
+			{
+				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
+			}
+			else
+			{
+				XOR[i] = Encrypted_Y[i];
+			}
+			*/
 		}
 		
 		// Step 3: delta A is computed on initialization, it is 0 or 1.
@@ -458,7 +476,9 @@ public final class alice extends socialist_millionaires implements Runnable
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
 			// if i is NOT in L, just place a random NON-ZERO
-			if(NTL.bit(x, i) != deltaA)
+			//int bit = x.testBit(i) ? 1 : 0;
+			int bit = NTL.bit(x, i);
+			if(bit != deltaA)
 			{
 				C[Encrypted_Y.length - 1 - i] = DGKOperations.encrypt(pubKey, rnd.nextInt(pubKey.getL()) + 1);
 			}
@@ -617,16 +637,23 @@ public final class alice extends socialist_millionaires implements Runnable
 		encAlphaXORBeta = new BigInteger[beta_bits.length];
 		for (int i = 0; i < encAlphaXORBeta.length; i++)
 		{
-			//Enc[x XOR y] = [y_i]
-			if (NTL.bit(alpha, i) == 0)
+			if (NTL.bit(alpha, i) == 1)
+			{
+				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);
+			}
+			else
 			{
 				encAlphaXORBeta[i] = beta_bits[i];
 			}
-			//Enc[x XOR y] = [1] - [y_i]
+			/*
+			if(alpha.testBit(i))
+			{
+				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);
+			}
 			else
 			{
-				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);				
-			}
+				encAlphaXORBeta[i] = beta_bits[i];	
+			}*/
 		}
 		
 		// Step E: Compute Alpha Hat
@@ -643,6 +670,16 @@ public final class alice extends socialist_millionaires implements Runnable
 			{
 				w[i] = DGKOperations.subtract(pubKey, encAlphaXORBeta[i], d);
 			}
+			/*
+			if(alpha_hat.testBit(i) == alpha.testBit(i))
+			{
+				w[i] = encAlphaXORBeta[i];
+			}
+			else
+			{
+				w[i] = DGKOperations.subtract(pubKey, encAlphaXORBeta[i], d);	
+			}
+			*/
 		}
 		
 		// Step F: See Optimization 1
@@ -651,6 +688,12 @@ public final class alice extends socialist_millionaires implements Runnable
 			// If it is 16 or 32 bits...
 			if(pubKey.getL() % 16 == 0)
 			{
+				/*
+				if(alpha_hat.testBit(i) == alpha.testBit(i))
+				{
+					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());
+				}
+				*/
 				if(NTL.bit(alpha_hat, i) == NTL.bit(alpha, i))
 				{
 					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());	
@@ -662,6 +705,12 @@ public final class alice extends socialist_millionaires implements Runnable
 				{
 					w[i] = DGKOperations.multiply(pubKey, w[i], powL);	
 				}
+				/*
+				if(alpha_hat.testBit(i) == alpha.testBit(i))
+				{
+					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());
+				}
+				*/
 			}
 		}
 		
@@ -669,22 +718,33 @@ public final class alice extends socialist_millionaires implements Runnable
 
 		// Step H: See Optimization 2
 		C = new BigInteger[beta_bits.length + 1];
+		int alpha_bit;
+		int alpha_hat_bit;
 		for (int i = 0; i < beta_bits.length;i++)
 		{
+			alpha_bit = alpha.testBit(i)  ? 1 : 0;;
+			alpha_hat_bit = alpha_hat.testBit(i) ? 1 : 0;;
 			if(deltaA != NTL.bit(alpha, i) && deltaA != NTL.bit(alpha_hat, i))
 			{
-				// C[i] = DGKOperations.encrypt(pubKey, NTL.RandomBnd(pubKey.getU()));
-				// Blinding should take care of the rest!
 				C[i] = pubKey.ONE();
 			}
 			else
 			{
+				exponent = 0;
+				if(alpha_hat.testBit(i))
+				{
+					exponent += 1;
+				}
+				if(alpha.testBit(i))
+				{
+					exponent -= 1;
+				}
 				exponent = NTL.bit(alpha_hat, i) - NTL.bit(alpha, i);
 				C[i] = DGKOperations.multiply(pubKey, DGKOperations.sum(pubKey, w, i), 3);
 				C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1 - (2* deltaA));
-				C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(alpha, i));
 				C[i] = DGKOperations.add(pubKey, C[i], DGKOperations.multiply(pubKey, d, exponent));
 				C[i] = DGKOperations.subtract(pubKey, C[i], beta_bits[i]);
+				C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(alpha, i));
 			}
 		}
 		
