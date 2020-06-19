@@ -186,4 +186,39 @@ public class NTL implements CipherConstants
 		}
 		return a;
 	}
+	
+	/*
+    long bit(const ZZ& a, long k);
+    long bit(long a, long k);
+    returns bit k of |a|, position 0 being the low-order bit.
+    If  k < 0 or k >= NumBits(a), returns 0.
+	 */
+
+	public static int bit(BigInteger a, long k)
+	{
+		//If the value k (location of bit is bigger than a
+		if (k >= a.bitLength())
+		{
+			return 0;
+		}
+		if (k < 0)
+		{
+			return 0;
+		}
+		String bit = a.toString(2);//get it in Binary
+		if (bit.charAt((int) k)== '0')
+		{
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
+	}
+
+	public static int bit(long a, long k)
+	{
+		return bit(BigInteger.valueOf(a), k);
+	}
+
 }

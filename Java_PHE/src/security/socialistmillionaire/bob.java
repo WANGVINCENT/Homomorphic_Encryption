@@ -189,36 +189,29 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Constraint violated: 0 <= x, y < 2^l, y is: " + y.bitLength() + " bits");
 		}
-		
+
 		Object in = null;
 		int deltaB = 0;
 		BigInteger deltaA = null;
 		BigInteger [] C = null;
-		
+
 		//Step 1: Bob sends encrypted bits to Alice
 		BigInteger [] EncY = new BigInteger[y.bitLength()];
 		for (int i = 0; i < y.bitLength(); i++)
 		{
-			if(y.testBit(i))
-			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 1);
-			}
-			else
-			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 0);
-			}
+			EncY[i] = DGKOperations.encrypt(pubKey, NTL.bit(y, i));
 		}
 		toAlice.writeObject(EncY);
 		toAlice.flush();
-		
+
 		// Step 2: Alice...
-		
+
 		// Step 3: Alice...
-		
+
 		// Step 4: Alice...
-		
+
 		// Step 5: Alice...
-		
+
 		// Step 6: Check if one of the numbers in C_i is decrypted to 0.
 		in = fromAlice.readObject();
 		if(in instanceof BigInteger[])
@@ -234,7 +227,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Protocol 1, Step 6: Invalid object!");
 		}
-		
+
 		for (BigInteger C_i: C)
 		{
 			if (DGKOperations.decrypt(privKey, C_i) == 0)
@@ -243,12 +236,12 @@ public final class bob extends socialist_millionaires implements Runnable
 				break;
 			}
 		}
-	
+
 		// Step 7: UNOFFICIAL
 		// Inform Alice what deltaB is
 		toAlice.writeInt(deltaB);
 		toAlice.flush();
-		
+
 		// Step 8: UNOFFICIAL
 		// Alice sends the answer, decrypt it and keep it for yourself
 		// This is best used in situations like an auction where Bob needs to know
@@ -351,14 +344,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		BigInteger EncY[] = new BigInteger[y.bitLength()];
 		for (int i = 0; i < y.bitLength(); i++)
 		{
-			if(y.testBit(i))
-			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 1);
-			}
-			else
-			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 0);	
-			}
+			EncY[i] = DGKOperations.encrypt(pubKey, NTL.bit(y, i));
 		}
 		toAlice.writeObject(EncY);
 		toAlice.flush();
@@ -372,7 +358,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		//Step 5: After blinding, Alice sends C_i to Bob
 
 		//Step 6: Bob checks if there is a 0 in C_i and seta deltaB accordingly
-		
+
 		/*
 		 * Currently by design of the program
 		 * 1- Alice KNOWS that bob will assume deltaB = 0.
@@ -430,7 +416,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		// Step 7: Return Gamma B to Alice, Alice will compute GammaA XOR GammaB
 		toAlice.writeInt(deltaB);
 		toAlice.flush();
-		
+
 		// Step 8: UNOFFICIAL
 		// Alice sends the answer, decrypt it and keep it for yourself
 		// This is best used in situations like an auction where Bob needs to know
@@ -509,14 +495,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		// Step B: Send the encrypted Beta bits
 		for (int i = 0; i < beta_bits.length;i++)
 		{
-			if(beta.testBit(i))
-			{
-				beta_bits[i] = DGKOperations.encrypt(pubKey, 1);
-			}
-			else
-			{
-				beta_bits[i] = DGKOperations.encrypt(pubKey, 0);	
-			}
+			beta_bits[i] = DGKOperations.encrypt(pubKey, NTL.bit(beta, i));
 		}
 		toAlice.writeObject(beta_bits);
 		toAlice.flush();
