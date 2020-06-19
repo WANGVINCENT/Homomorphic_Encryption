@@ -118,8 +118,6 @@ public class Main
 				
 				// Build Paillier Keys
 				PaillierKeyPairGenerator p = new PaillierKeyPairGenerator();
-				// NULL -> ADDITIVE
-				// NOT NULL -> MULTIPLICATIVE
 				p.initialize(KEY_SIZE, new SecureRandom());
 				KeyPair pe = p.generateKeyPair();
 				pk = (PaillierPublicKey) pe.getPublic();
@@ -127,13 +125,13 @@ public class Main
 				
 				// Build ElGamal Keys
 				ElGamalKeyPairGenerator pg = new ElGamalKeyPairGenerator();
+				// NULL -> ADDITIVE
+				// NOT NULL -> MULTIPLICATIVE
 				pg.initialize(KEY_SIZE, null);
-				KeyPair el_gamal = null;
-				/*
 				KeyPair el_gamal = pg.generateKeyPair();
 				e_pk = (ElGamalPublicKey) el_gamal.getPublic();
 				e_sk = (ElGamalPrivateKey) el_gamal.getPrivate();
-				*/
+				
 				// Build GM Keys
 				GMKeyPairGenerator gmg = new GMKeyPairGenerator();
 				gmg.initialize(KEY_SIZE, null);
@@ -142,11 +140,11 @@ public class Main
 				gm_sk = (GMPrivateKey) gm.getPrivate();
 				
 				// Stress Test
-				GM_Test();
+				//GM_Test();
 				//Paillier_Test();
 				//DGK_Test();
 				//ElGamal_Test();
-				System.exit(0);
+				
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
