@@ -66,7 +66,7 @@ public class Main
 	
 	private static final int TEST = 100;    // Protocol 1-4 testing
 	private static final int SIZE = 100000; // Stress-Test
-	private static final int KEY_SIZE = 2048;
+	private static final int KEY_SIZE = 1024;
 	private static final int BILLION = BigInteger.TEN.pow(9).intValue();
 	
 	public static void main(String [] args)
@@ -128,10 +128,12 @@ public class Main
 				// Build ElGamal Keys
 				ElGamalKeyPairGenerator pg = new ElGamalKeyPairGenerator();
 				pg.initialize(KEY_SIZE, null);
+				KeyPair el_gamal = null;
+				/*
 				KeyPair el_gamal = pg.generateKeyPair();
 				e_pk = (ElGamalPublicKey) el_gamal.getPublic();
 				e_sk = (ElGamalPrivateKey) el_gamal.getPrivate();
-				
+				*/
 				// Build GM Keys
 				GMKeyPairGenerator gmg = new GMKeyPairGenerator();
 				gmg.initialize(KEY_SIZE, null);
@@ -141,10 +143,10 @@ public class Main
 				
 				// Stress Test
 				GM_Test();
-				Paillier_Test();
-				DGK_Test();
-				ElGamal_Test();
-
+				//Paillier_Test();
+				//DGK_Test();
+				//ElGamal_Test();
+				System.exit(0);
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
@@ -1124,7 +1126,7 @@ public class Main
 		List<BigInteger> enc_t = GMCipher.encrypt(t, gm_pk);
 		List<BigInteger> enc_z = GMCipher.encrypt(t, gm_pk);
 		long start = 0;
-
+		
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1144,7 +1146,6 @@ public class Main
 		{
 			GMCipher.xor(enc_t, enc_z, gm_pk);
 		}
-		System.out.println(GMCipher.decrypt(GMCipher.xor(enc_t, enc_z, gm_pk), gm_sk));
 		System.out.println("Time to complete xor: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
 }

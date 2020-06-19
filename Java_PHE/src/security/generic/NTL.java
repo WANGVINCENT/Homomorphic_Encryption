@@ -125,54 +125,37 @@ public class NTL implements CipherConstants
 	// https://medium.com/coinmonks/probabilistic-encryption-using-the-goldwasser-micali-gm-method-7f9893a93ac9
 	public static BigInteger jacobi(BigInteger a, BigInteger n)
 	{
-		if (a.equals(BigInteger.ZERO))
+		if (a.compareTo(NEG_ONE) <= 0 || n.mod(TWO).equals(BigInteger.ZERO)) 
 		{
-			return BigInteger.ZERO;
+			throw new IllegalArgumentException("Invalid value. k = " + a + ", n = " + n);
 		}
-		if (a.equals(BigInteger.ONE))
+		a = a.mod(n);
+		BigInteger jacobi = BigInteger.ONE;
+		while (a.compareTo(BigInteger.ZERO) == 1) 
 		{
-			return BigInteger.ONE;
+			while (a.mod(TWO).equals(BigInteger.ZERO)) 
+			{
+				a = a.divide(TWO);
+				BigInteger r = n.mod(EIGHT);
+				if ( r.equals(THREE) || r.equals(FIVE) ) 
+				{
+					jacobi = jacobi.multiply(NEG_ONE);
+				}
+			}
+			BigInteger temp = n;
+			n = a;
+			a = temp;
+			if ( a.mod(FOUR).equals(THREE) && n.mod(FOUR).equals(THREE) ) 
+			{
+				jacobi = jacobi.multiply(NEG_ONE);
+			}
+			a = a.mod(n);
 		}
-		BigInteger e = BigInteger.ZERO;
-		BigInteger a1 = a;
-		while (a1.mod(TWO).equals(BigInteger.ZERO))
+		if (n.equals(BigInteger.ONE)) 
 		{
-			e = e.add(BigInteger.ONE);
-			a1 = a1.divide(TWO);
+			return jacobi;
 		}
-
-		// assert 2**e * a1 == a;
-		BigInteger s = BigInteger.ZERO;
-		BigInteger temp = n.mod(EIGHT);
-
-		if (e.mod(TWO).equals(BigInteger.ZERO))
-		{
-			s = BigInteger.ONE;
-		}
-		// n % 8 in {1, 7}
-		else if (temp.equals(BigInteger.ONE) || temp.equals(SEVEN))
-		{
-			s = BigInteger.ONE;
-		}
-		// n % 8 in {3, 5}
-		else if (temp.equals(THREE) || temp.equals(FIVE))
-		{
-			s = NEG_ONE;
-		}
-
-		if (n.mod(FOUR).equals(THREE) && a1.mod(FOUR).equals(THREE))
-		{
-			s = s.multiply(NEG_ONE);
-		}
-		BigInteger n1 = n.mod(a1);
-		if (a1.equals(BigInteger.ONE))
-		{
-			return s;
-		}
-		else
-		{
-			return s.multiply(jacobi(n1, a1));
-		}
+		return BigInteger.ZERO;
 	}
 
 	public static BigInteger quadratic_non_residue(BigInteger p)
@@ -182,6 +165,23 @@ public class NTL implements CipherConstants
 		{
 			// a = randint(1, p) --> [1, p]
 			// x = pseudo-random number in the range [0..n-1]
+			a = NTL.RandomBnd(p);
+		}
+		return a;
+	}
+	
+	public static BigInteger quadratic_non_residue(BigInteger p, BigInteger q)
+	{
+		BigInteger a = NTL.RandomBnd(p);
+		while (true)
+		{
+			if(NTL.jacobi(a, p).equals(NEG_ONE))
+			{
+				if(NTL.jacobi(a, q).equals(NEG_ONE))
+				{
+					break;
+				}
+			}
 			a = NTL.RandomBnd(p);
 		}
 		return a;
