@@ -1,6 +1,7 @@
 package security.paillier;
 
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
 import java.security.MessageDigest;
@@ -9,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -114,6 +116,18 @@ public class PaillierSignature extends SignatureSpi
 		{
 			throw new SignatureException("Didn't Initialize Engine Verify Mode!");
 		}
+	}
+	
+	protected void engineSetParameter(AlgorithmParameterSpec param) 
+			throws InvalidParameterException 
+	{
+
+	}
+
+	protected AlgorithmParameters engineGetParameter() 
+			throws InvalidParameterException
+	{
+		return null;
 	}
 
 	protected void engineSetParameter(String param, Object value) 

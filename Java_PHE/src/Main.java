@@ -66,7 +66,7 @@ public class Main
 	
 	private static final int TEST = 100;    // Protocol 1-4 testing
 	private static final int SIZE = 100000; // Stress-Test
-	private static final int KEY_SIZE = 1024;
+	private static final int KEY_SIZE = 2048;
 	private static final int BILLION = BigInteger.TEN.pow(9).intValue();
 	
 	public static void main(String [] args)
@@ -956,7 +956,7 @@ public class Main
 				System.out.println("PAILLIER VALID AT: " + i);
 			}
 		}
-		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+		System.out.println("Time to complete signature: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
 		BigInteger base = PaillierCipher.encrypt(NTL.generateXBitRandom(15), pk);
 		BigInteger t = NTL.generateXBitRandom(15);
@@ -1021,7 +1021,7 @@ public class Main
 				System.out.println("DGK VALID AT: " + i);
 			}
 		}
-		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+		System.out.println("Time to complete signature: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 			
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -1086,7 +1086,7 @@ public class Main
 				System.out.println("ElGamal VALID AT: " + i);
 			}
 		}
-		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+		System.out.println("Time to complete signature: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
@@ -1122,6 +1122,7 @@ public class Main
 		System.out.println("-----------GM TEST x" + SIZE + "-----------------KEY: " + KEY_SIZE + "-----------");
 		BigInteger t = NTL.generateXBitRandom(15);
 		List<BigInteger> enc_t = GMCipher.encrypt(t, gm_pk);
+		List<BigInteger> enc_z = GMCipher.encrypt(t, gm_pk);
 		long start = 0;
 
 		start = System.nanoTime();
@@ -1131,12 +1132,19 @@ public class Main
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 
-		// Decrypt
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
 			GMCipher.decrypt(enc_t, gm_sk);
 		}
 		System.out.println("Time to complete decryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
+		
+		start = System.nanoTime();
+		for(int i = 0; i < SIZE; i++)
+		{
+			GMCipher.xor(enc_t, enc_z, gm_pk);
+		}
+		System.out.println(GMCipher.decrypt(GMCipher.xor(enc_t, enc_z, gm_pk), gm_sk));
+		System.out.println("Time to complete xor: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
 }

@@ -1789,7 +1789,7 @@ public final class alice extends socialist_millionaires implements Runnable
 				// Merge both dequeues!
 				for(Iterator<BigInteger> itr = maxSorted.descendingIterator();itr.hasNext();)
 				{
-					minSorted.addLast((BigInteger) itr.next());
+					minSorted.addLast(itr.next());
 				}
 				sortedArray = minSorted.toArray(new BigInteger[minSorted.size()]);
 				break;

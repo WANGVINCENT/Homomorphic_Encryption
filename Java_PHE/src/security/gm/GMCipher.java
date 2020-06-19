@@ -437,6 +437,25 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	    return new BigInteger(bits, 2);
 	}
 	
+	public static BigInteger decrypt(BigInteger [] cipher, GMPrivateKey sk)
+	{
+		BigInteger e = BigInteger.ZERO;
+		String bits = "";
+		for (BigInteger enc_bit: cipher)
+		{
+			e = NTL.jacobi(enc_bit, sk.p);
+			if (e.equals(BigInteger.ONE))
+			{
+				bits += "0";
+			}
+			else
+			{
+				bits += "1";
+			}
+		}
+	    return new BigInteger(bits, 2);
+	}
+	
 	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
 	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk) throws IllegalArgumentException
 	{
@@ -448,6 +467,21 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		for (int i = 0; i < cipher_1.length; i++)
 		{
 			xor_solution[i] = cipher_1[i].multiply(cipher_2[i]).mod(pk.n);
+		}
+		return xor_solution;
+	}	
+	
+	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
+	public static BigInteger[] xor(List<BigInteger> cipher_1, List<BigInteger> cipher_2, GMPublicKey pk) throws IllegalArgumentException
+	{
+		if(cipher_1.size() != cipher_2.size())
+		{
+			throw new IllegalArgumentException("Unequal Size of Ciphertext for XOR!");
+		}
+		BigInteger [] xor_solution = new BigInteger[cipher_1.size()];
+		for (int i = 0; i < cipher_1.size(); i++)
+		{
+			xor_solution[i] = cipher_1.get(i).multiply(cipher_2.get(i)).mod(pk.n);
 		}
 		return xor_solution;
 	}

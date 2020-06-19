@@ -1,6 +1,7 @@
 package security.elgamal;
 
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
 import java.security.MessageDigest;
@@ -9,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
 import security.generic.CipherConstants;
@@ -122,13 +124,13 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		}
 	}
 
-	protected void engineSetParameter(String param, Object value) 
+	protected void engineSetParameter(AlgorithmParameterSpec param) 
 			throws InvalidParameterException 
 	{
 
 	}
 
-	protected Object engineGetParameter(String param) 
+	protected AlgorithmParameters engineGetParameter() 
 			throws InvalidParameterException
 	{
 		return null;
@@ -166,11 +168,13 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 
 		if (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(pk.p.subtract(BigInteger.ONE)) == 1)
 		{
-			throw new IllegalArgumentException("Invalid r!");
+			System.err.println("r: " + r + " and " + pk.p.subtract(BigInteger.ONE));
+			return false;
 		}
 		if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(TWO)) == 1)
 		{
-			throw new IllegalArgumentException("Invalid s!");
+			System.err.println("s: " + s + " and " + pk.p.subtract(TWO));
+			return false;
 		}
 		// h = y = g^x
 		check = pk.h.modPow(r, pk.p);
@@ -206,5 +210,18 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	public boolean verify(byte [] signature) throws SignatureException
 	{
 		return engineVerify(signature);
+	}
+
+	// Should delete
+	protected void engineSetParameter(String param, Object value)
+			throws InvalidParameterException 
+	{
+		
+	}
+
+	protected Object engineGetParameter(String param) 
+			throws InvalidParameterException 
+	{
+		return null;
 	}
 }

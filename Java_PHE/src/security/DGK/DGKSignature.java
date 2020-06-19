@@ -1,6 +1,7 @@
 package security.DGK;
 
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
 import java.security.MessageDigest;
@@ -9,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
+import java.security.spec.AlgorithmParameterSpec;
 
 public class DGKSignature extends SignatureSpi
 {
@@ -82,6 +84,18 @@ public class DGKSignature extends SignatureSpi
 			throws SignatureException 
 	{
 		return verify(new BigInteger(encoded_hash), new BigInteger(sigBytes), pk);
+	}
+	
+	protected void engineSetParameter(AlgorithmParameterSpec param) 
+			throws InvalidParameterException 
+	{
+
+	}
+
+	protected AlgorithmParameters engineGetParameter() 
+			throws InvalidParameterException
+	{
+		return null;
 	}
 
 	protected void engineSetParameter(String param, Object value) 
