@@ -938,7 +938,7 @@ public class Main
 	// ----------------------------All Stress Test methods for Crypto-------------------------------------------------
 	public static void Paillier_Test() throws InvalidKeyException, SignatureException
 	{
-		System.out.println("-----------PAILLIER TEST--------------------------");
+		System.out.println("-----------PAILLIER TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
 		long start = 0;
 		
 		PaillierSignature sig = new PaillierSignature();
@@ -1001,8 +1001,7 @@ public class Main
 	
 	public static void DGK_Test() throws InvalidKeyException, SignatureException
 	{
-		System.out.println("-----------DGK TEST--------------------------");
-
+		System.out.println("-----------DGK TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
 		BigInteger base = DGKOperations.encrypt(pubKey, NTL.generateXBitRandom(15));
 		BigInteger t = NTL.generateXBitRandom(15);
 		long start = 0;
@@ -1064,7 +1063,7 @@ public class Main
 	
 	public static void ElGamal_Test() throws SignatureException, InvalidKeyException
 	{
-		System.out.println("-----------EL-GAMAL TEST--------------------------");
+		System.out.println("-----------EL-GAMAL TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
 
 		ElGamal_Ciphertext base = ElGamalCipher.encrypt(e_pk, NTL.generateXBitRandom(15));
 		BigInteger t = NTL.generateXBitRandom(15);
@@ -1120,7 +1119,7 @@ public class Main
 	
 	public static void GM_Test()
 	{
-		System.out.println("-----------GM TEST--------------------------");
+		System.out.println("-----------GM TEST x" + SIZE + "-----------------KEY: " + KEY_SIZE + "-----------");
 		BigInteger t = NTL.generateXBitRandom(15);
 		List<BigInteger> enc_t = GMCipher.encrypt(t, gm_pk);
 		long start = 0;
