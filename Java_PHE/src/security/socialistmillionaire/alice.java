@@ -1973,13 +1973,13 @@ public final class alice extends socialist_millionaires implements Runnable
 	{
 		if(k > input.size() || k <= 0)
 		{
-			throw new IllegalArgumentException("Invalid k value!");
+			throw new IllegalArgumentException("Invalid k value! " + k);
 		}
 		// deep copy
 		List<ElGamal_Ciphertext> arr = new ArrayList<ElGamal_Ciphertext>();
 		for(ElGamal_Ciphertext p : input)
 		{
-		    arr.add(p);
+			arr.add(p);
 		}
 		
 		ElGamal_Ciphertext temp;

@@ -85,26 +85,7 @@ public class Main
 		{
 			// DO NOT USE ASSERT WHEN CONDUCTING THE TESTS!!!!
 			if (isAlice)
-			{
-				BigInteger y = new BigInteger("65");
-				for (int i = 0; i < y.bitLength(); i++)
-				{
-					if(y.testBit(i))
-					{
-						System.out.print("1");
-					}
-					else
-					{
-						System.out.print("0");
-					}
-				}
-				System.out.println();
-				for (int i = 0; i < y.bitLength(); i++)
-				{
-					System.out.print(NTL.bit(y, i));
-				}
-				System.out.println();
-				
+			{	
 				// I need to ensure that Alice has same Keys as Bob! and initialize as well
 				Niu = new alice(new Socket("192.168.1.208", 9254), true);
 				
@@ -146,7 +127,7 @@ public class Main
 				ElGamalKeyPairGenerator pg = new ElGamalKeyPairGenerator();
 				// NULL -> ADDITIVE
 				// NOT NULL -> MULTIPLICATIVE
-				pg.initialize(KEY_SIZE, null);
+				pg.initialize(KEY_SIZE, new SecureRandom());
 				KeyPair el_gamal = pg.generateKeyPair();
 				e_pk = (ElGamalPublicKey) el_gamal.getPublic();
 				e_sk = (ElGamalPrivateKey) el_gamal.getPrivate();
@@ -249,7 +230,6 @@ public class Main
 		Niu.getKMin(toSort, 3);
 		
 		// Test ElGamal Sorting
-		low = generate_low();
 		for(int i = 0; i < low.length;i++)
 		{
 			toSort[i] = NTL.generateXBitRandom(9);
@@ -471,11 +451,12 @@ public class Main
 		
 		if(!e_pk.ADDITIVE)
 		{
-			for(int i = 0; i < 3; i++)
+			start = System.nanoTime();
+			for(int i = 0; i < TEST; i++)
 			{
 				Niu.addition(x, y);
-				Niu.addition(x, y);
 			}
+			System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
 			return;
 		}
 		// MULTIPLICATION
@@ -537,11 +518,9 @@ public class Main
 		
 		if(!e_pk.ADDITIVE)
 		{
-			for(int i = 0; i < 3; i++)
+			for(int i = 0; i < TEST; i++)
 			{
-				// Add then subtract!
 				andrew.addition(true);
-				andrew.addition(false);
 			}
 			return;
 		}
