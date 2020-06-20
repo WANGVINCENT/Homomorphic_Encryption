@@ -4,7 +4,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
 import java.util.ArrayList;
@@ -84,30 +83,30 @@ public class Main
 		
 		try
 		{
-			// DO NOT USE ASSERT WHEN CONDUCTING THE TESTS!!!!
 			if (isAlice)
 			{	
-				// I need to ensure that Alice has same Keys as Bob! and initialize as well
 				Niu = new alice(new Socket("192.168.1.208", 9254), true);
-				
-				// TO BE CONSISTENT I NEED TO USE KEYS FROM BOB!
 				pk = Niu.getPaillierPublicKey();
 				pubKey = Niu.getDGKPublicKey();
 				e_pk = Niu.getElGamalPublicKey();
+				
+				// Line 99 in Alice matches to Line 158-165 in Bob
+				// Lines 102-103 in Alice matches to Line 167-168 in Bob			
+				// Lines 107-112 in Alices matches to Line 172 - 176 in Bob
 				
 				// Test K-min
 				k_min();
 				
 				// Test Protocol 1 - 4 Functionality
 				alice_demo();
-				alice_ElGamal();
+				alice_demo_ElGamal();
 			
 				// Stress Test Protocol 1 - 4 Functionality
 				Niu.setDGKMode(false);
-				alice_Paillier_Veugen();
+				alice_Paillier();
 				Niu.setDGKMode(true);
-				alice_DGK_Veugen();
-				alice_ElGamal_Veugen();
+				alice_DGK();
+				alice_ElGamal();
 			}
 			else
 			{
@@ -129,7 +128,7 @@ public class Main
 				ElGamalKeyPairGenerator pg = new ElGamalKeyPairGenerator();
 				// NULL -> ADDITIVE
 				// NOT NULL -> MULTIPLICATIVE
-				pg.initialize(KEY_SIZE, new SecureRandom());
+				pg.initialize(KEY_SIZE, null);
 				KeyPair el_gamal = pg.generateKeyPair();
 				e_pk = (ElGamalPublicKey) el_gamal.getPublic();
 				e_sk = (ElGamalPrivateKey) el_gamal.getPrivate();
@@ -153,6 +152,7 @@ public class Main
 				andrew = new bob(bob_client, pe, DGK, el_gamal, true);
 				
 				// Test K-Min using Protocol 4
+				// Line 99 in Alice matches to Line 158-165 in Bob
 				andrew.setDGKMode(false);
 				andrew.run();// Sort Paillier
 				andrew.setDGKMode(true);
@@ -162,16 +162,17 @@ public class Main
 					andrew.repeat_ElGamal_Protocol4();
 				}
 				
-				// Test Protocol 1 - 4 functionality
+				// Lines 102-103 in Alice matches to Line 167-168 in Bob
 				bob_demo();
-				bob_ElGamal();
+				bob_demo_ElGamal();
 				
 				// Stress Test the Protocols (get time to compute)
+				// Lines 107-112 in Alices matches to Line 172 - 176 in Bob
 				andrew.setDGKMode(false);
-				bob_Veugen(); //Paillier
+				bob(); //Paillier
 				andrew.setDGKMode(true);
-				bob_Veugen(); //DGK
-				bob_ElGamal_Veugen();
+				bob(); //DGK
+				bob_ElGamal();
 			}
 		}
 		catch (IOException | ClassNotFoundException x)
@@ -246,503 +247,12 @@ public class Main
 		}
 	}
 	
-	// ------------------------------------ Stress Test Protocol 1 - 4 DGK and Paillier-----------------------------------
-	
-	public static void alice_Paillier_Veugen() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
-	{
-		System.out.println("Start Paillier Test");
-		Niu.setDGKMode(false);
-		long start;
-		BigInteger x = NTL.generateXBitRandom(15);
-		BigInteger y = NTL.generateXBitRandom(15);
-		BigInteger a = NTL.generateXBitRandom(15);
-		System.out.println("x: " + x);
-		System.out.println("y: " + y);
-		System.out.println("a: " + a);
-		System.out.println("N: " + pk.getN());
-		x = PaillierCipher.encrypt(x, pk);
-		y = PaillierCipher.encrypt(y, pk);
-		
-		// MULTIPLICATION
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.multiplication(x, y);
-		}
-		System.out.println("Multiplication, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// DIVISION
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.division(x, 1000);
-		}
-		System.out.println("Division, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 1
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol1(a);
-		}
-		System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 2
-		if(!Niu.isDGK())
-		{
-			start = System.nanoTime();
-			for(int i = 0; i < TEST; i++)
-			{
-				Niu.Protocol2(x, y);
-			}
-			System.out.println("Protocol 2, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");	
-		}
-		
-		// PROTOCOL 3
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol3(a);
-		}
-		System.out.println("Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// Modified Protocol 3
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Modified_Protocol3(a);
-		}
-		System.out.println("Modified Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 4
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol4(x, y);
-		}
-		System.out.println("Protocol 4, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-	}
-	
-	public static void alice_DGK_Veugen()
-			throws ClassNotFoundException, IOException, IllegalArgumentException
-	{
-		System.out.println("Start DGK Test");
-		long start;
-		Niu.setDGKMode(true);
-		BigInteger x = NTL.generateXBitRandom(15);
-		BigInteger y = NTL.generateXBitRandom(15);
-		BigInteger a = NTL.generateXBitRandom(15);
-		System.out.println("x: " + x);
-		System.out.println("y: " + y);
-		System.out.println("a: " + a);
-		System.out.println("u: " + pubKey.getU());
-		x = DGKOperations.encrypt(pubKey, x);
-		y = DGKOperations.encrypt(pubKey, y);
-		
-		// MULTIPLICATION
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.multiplication(x, y);
-		}
-		System.out.println("Multiplication, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// DIVISION
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.division(x, 1000);
-		}
-		System.out.println("Division, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 1
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol1(a);
-		}
-		System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 2
-		if(!Niu.isDGK())
-		{
-			start = System.nanoTime();
-			for(int i = 0; i < TEST; i++)
-			{
-				Niu.Protocol2(x, y);
-			}
-			System.out.println("Protocol 2, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		}
-		
-		// PROTOCOL 3
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol3(a);
-		}
-		System.out.println("Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Modified_Protocol3(a);
-		}
-		System.out.println("Modified Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 4
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol4(x, y);
-		}
-		System.out.println("Protocol 4, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-	}
-	
-	public static void bob_Veugen() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
-	{
-		BigInteger b = NTL.generateXBitRandom(15);
-		System.out.println("b: " + b);
-		// Test Code
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.multiplication();
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.division(1000);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Protocol1(b);
-		}
-		
-		if(!andrew.isDGK())
-		{
-			for(int i = 0; i < TEST; i++)
-			{	
-				andrew.Protocol2();
-			}
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Protocol3(b);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Modified_Protocol3(b);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Protocol4();	
-		}
-	}
-	
-	// ------------------------------------ Stress Test Protocol 1 - 4 ElGamal-----------------------------------
-	public static void alice_ElGamal_Veugen() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
-	{
-		System.out.println("Start ElGamal Test");
-		long start;
-		BigInteger _x = NTL.generateXBitRandom(15);
-		BigInteger _y = NTL.generateXBitRandom(15);
-		BigInteger a = NTL.generateXBitRandom(15);
-		System.out.println("x : " + _x);
-		System.out.println("y : " + _y);
-		System.out.println("a : " + a);
-		System.out.println("u : " + CipherConstants.FIELD_SIZE);
-		ElGamal_Ciphertext x = ElGamalCipher.encrypt(e_pk, _x);
-		ElGamal_Ciphertext y = ElGamalCipher.encrypt(e_pk, _y);
-		
-		if(!e_pk.ADDITIVE)
-		{
-			start = System.nanoTime();
-			for(int i = 0; i < TEST; i++)
-			{
-				Niu.addition(x, y);
-			}
-			System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-			return;
-		}
-		// MULTIPLICATION
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.multiplication(x, y);
-		}
-		System.out.println("Multiplication, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-
-		// DIVISION
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.division(x, 1000);
-		}
-		System.out.println("Division, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 1
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol1(a);
-		}
-		System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 2
-		System.out.println("Protocol 2, ElGamal doesn't support Protocol 2!");
-		
-		// PROTOCOL 3
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol3(a);
-		}
-		System.out.println("Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 3
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Modified_Protocol3(a);
-		}
-		System.out.println("Modified Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-		
-		// PROTOCOL 4
-		start = System.nanoTime();
-		for(int i = 0; i < TEST; i++)
-		{
-			Niu.Protocol4(x, y);
-		}
-		System.out.println("Protocol 4, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
-	}
-	
-	public static void bob_ElGamal_Veugen() throws ClassNotFoundException, IOException
-	{
-		BigInteger b = NTL.generateXBitRandom(15);
-		System.out.println("b: " + b);
-		
-		if(!e_pk.ADDITIVE)
-		{
-			for(int i = 0; i < TEST; i++)
-			{
-				andrew.addition(true);
-			}
-			return;
-		}
-		
-		// Test Code
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.ElGamal_multiplication();
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.ElGamal_division(1000);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Protocol1(b);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Protocol3(b);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.Modified_Protocol3(b);
-		}
-		
-		for(int i = 0; i < TEST; i++)
-		{
-			andrew.ElGamal_Protocol4();	
-		}
-	}
-	
-	//--------------------------show basic functionality of Protocol 1 - 4 but with ElGamal------------------------------------------
-	
-	public static void alice_ElGamal() throws ClassNotFoundException, IOException
-	{
-		if(!e_pk.ADDITIVE)
-		{
-			System.out.println("ElGamal Secure Addition/Subtraction");
-			// Addition
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("400")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("1000")));
-			// Subtract
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			return;
-		}
-		System.out.println("Multiplication Tests...ElGamal");
-		// Check the multiplication, ElGamal
-		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), 
-				ElGamalCipher.encrypt(e_pk, new BigInteger("2")));
-		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), 
-				ElGamalCipher.encrypt(e_pk, new BigInteger("3")));
-		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), 
-				ElGamalCipher.encrypt(e_pk, new BigInteger("50")));
-		
-		System.out.println("Division Tests...ElGamal");
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 2);//100/2 = 50
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 3);//100/3 = 33
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 4);//100/4 = 25
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 5);//100/5 = 20
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 25);//100/25 = 4
-		
-		// ElGamal
-		System.out.println("Protocol 4 Tests...ElGamal");
-		for (int i = 0; i < low.length;i++)
-		{
-			System.out.println(!Niu.Protocol4(ElGamalCipher.encrypt(e_pk, low[i]), 
-					ElGamalCipher.encrypt(e_pk, mid[i])));
-			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(e_pk, mid[i]), 
-					ElGamalCipher.encrypt(e_pk, mid[i])));
-			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(e_pk, high[i]), 
-					ElGamalCipher.encrypt(e_pk, mid[i])));
-		}
-	}
-	
-	public static void bob_ElGamal() throws ClassNotFoundException, IOException
-	{
-		if(!e_pk.ADDITIVE)
-		{
-			// Addition
-			andrew.addition(true);
-			andrew.addition(true);
-			andrew.addition(true);
-			// Subtract
-			andrew.addition(false);
-			andrew.addition(false);
-			andrew.addition(false);
-			return;
-		}
-		
-		for(int i = 0; i < 3; i++)
-		{
-			andrew.ElGamal_multiplication();
-		}
-		
-		// Division Test, ElGamal	
-		andrew.ElGamal_division(2);
-		andrew.ElGamal_division(3);
-		andrew.ElGamal_division(4);
-		andrew.ElGamal_division(5);
-		andrew.ElGamal_division(25);
-		
-		// Test Protocol 4 with ElGamal
-		for(int i = 0; i < mid.length * 3; i++)
-		{
-			andrew.ElGamal_Protocol4();
-		}
-	}
-	
-	//---------------------Generate numbers-----------------------------------
-	public static BigInteger [] generate_low()
-	{
-		BigInteger [] test_set = new BigInteger[16];
-		test_set[0] = new BigInteger("1");
-		test_set[1] = new BigInteger("2");
-		test_set[2] = new BigInteger("4");
-		test_set[3] = new BigInteger("8");
-		test_set[4] = new BigInteger("16");
-		test_set[5] = new BigInteger("32");
-		test_set[6] = new BigInteger("64");
-		test_set[7] = new BigInteger("128");
-		test_set[8] = new BigInteger("256");
-		test_set[9] = new BigInteger("512");
-		
-		test_set[10] = new BigInteger("1024");
-		test_set[11] = new BigInteger("2048");
-		test_set[12] = new BigInteger("4096");
-		test_set[13] = new BigInteger("8192");
-		test_set[14] = new BigInteger("16384");
-		test_set[15] = new BigInteger("32768");
-		
-		BigInteger t = BigInteger.ZERO;
-		for (int i = 0; i < test_set.length;i++)
-		{
-			test_set[i] = test_set[i].add(t);
-		}
-		return test_set;
-	}
-	
-	public static BigInteger[] generate_mid()
-	{
-		BigInteger [] test_set = new BigInteger[16];
-		test_set[0] = new BigInteger("1");
-		test_set[1] = new BigInteger("2");
-		test_set[2] = new BigInteger("4");
-		test_set[3] = new BigInteger("8");
-		test_set[4] = new BigInteger("16");
-		test_set[5] = new BigInteger("32");
-		test_set[6] = new BigInteger("64");
-		test_set[7] = new BigInteger("128");
-		test_set[8] = new BigInteger("256");
-		test_set[9] = new BigInteger("512");
-		
-		test_set[10] = new BigInteger("1024");
-		test_set[11] = new BigInteger("2048");
-		test_set[12] = new BigInteger("4096");
-		test_set[13] = new BigInteger("8192");
-		test_set[14] = new BigInteger("16384");
-		test_set[15] = new BigInteger("32768");
-		
-		BigInteger t = new BigInteger("5");
-		for (int i = 0; i < test_set.length; i++)
-		{
-			test_set[i] = test_set[i].add(t);
-		}
-		return test_set;
-	}
-	
-	public static BigInteger[] generate_high()
-	{
-		BigInteger [] test_set = new BigInteger[16];
-		
-		test_set[0] = new BigInteger("1");
-		test_set[1] = new BigInteger("2");
-		test_set[2] = new BigInteger("4");
-		test_set[3] = new BigInteger("8");
-		test_set[4] = new BigInteger("16");
-		test_set[5] = new BigInteger("32");
-		test_set[6] = new BigInteger("64");
-		test_set[7] = new BigInteger("128");
-		test_set[8] = new BigInteger("256");
-		test_set[9] = new BigInteger("512");
-		
-		test_set[10] = new BigInteger("1024");
-		test_set[11] = new BigInteger("2048");
-		test_set[12] = new BigInteger("4096");
-		test_set[13] = new BigInteger("8192");
-		test_set[14] = new BigInteger("16384");
-		test_set[15] = new BigInteger("32768");
-		
-		BigInteger t = new BigInteger("10");
-		for (int i = 0; i < test_set.length; i++)
-		{
-			test_set[i] = test_set[i].add(t);
-		}
-		return test_set;
-	}
-	
-	//--------------------------show basic functionality of Protocol 1 - 4------------------------------------------
+	// ------------------------------------ Basic demo methods-------------------------------------
 	public static void alice_demo() throws ClassNotFoundException, IOException
 	{	
 		// Check the multiplication, DGK
 		Niu.setDGKMode(true);
+		System.out.println("Testing Multiplication with DGK");
 		Niu.multiplication(DGKOperations.encrypt(pubKey, new BigInteger("100")), 
 				DGKOperations.encrypt(pubKey, new BigInteger("2")));
 		Niu.multiplication(DGKOperations.encrypt(pubKey, new BigInteger("1000")), 
@@ -752,6 +262,7 @@ public class Main
 		
 		// Check the multiplication, Paillier
 		Niu.setDGKMode(false);
+		System.out.println("Testing Multiplication with Paillier");
 		Niu.multiplication(PaillierCipher.encrypt(new BigInteger("100"), pk), 
 				PaillierCipher.encrypt(new BigInteger("2"), pk));
 		Niu.multiplication(PaillierCipher.encrypt(new BigInteger("1000"), pk), 
@@ -828,11 +339,7 @@ public class Main
 		// DGK
 		System.out.println("Protocol 2 Tests...DGK...SKIPPED!");
 		
-		// ElGamal
-		System.out.println("Protocol 2 Tests...ElGamal...SKIPPED!");
-
-		// Test Protocol 4 (Builds on Protocol 3)
-		// Paillier
+		// Paillier, Protocol 4 returns (X >= Y)
 		System.out.println("Protocol 4 Tests...Paillier");
 		Niu.setDGKMode(false);
 		for (int i = 0; i < low.length;i++)
@@ -845,8 +352,7 @@ public class Main
 					PaillierCipher.encrypt(mid[i], pk)));
 		}
 		
-		// DGK
-		// Seems like Protocol 4 ONLY works with [X > Y]
+		// DGK, Protocol 4 returns (X > Y)
 		Niu.setDGKMode(true);
 		System.out.println("Protocol 4 Tests...DGK");
 		for (int i = 0; i < low.length;i++)
@@ -966,7 +472,508 @@ public class Main
 		andrew.division(25);
 	}
 	
+	//--------------------------Basic demo methods with ElGamal------------------------------------------	
+	public static void alice_demo_ElGamal() throws ClassNotFoundException, IOException
+	{
+		if(!e_pk.ADDITIVE)
+		{
+			System.out.println("ElGamal Secure Addition/Subtraction");
+			// Addition
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("400")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("1000")));
+			// Subtract
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			return;
+		}
+		System.out.println("Multiplication Tests...ElGamal");
+		// Check the multiplication, ElGamal
+		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), 
+				ElGamalCipher.encrypt(e_pk, new BigInteger("2")));
+		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), 
+				ElGamalCipher.encrypt(e_pk, new BigInteger("3")));
+		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), 
+				ElGamalCipher.encrypt(e_pk, new BigInteger("50")));
+
+		System.out.println("Division Tests...ElGamal");
+		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 2);//100/2 = 50
+		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 3);//100/3 = 33
+		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 4);//100/4 = 25
+		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 5);//100/5 = 20
+		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 25);//100/25 = 4
+
+		// ElGamal
+		System.out.println("Protocol 4 Tests...ElGamal");
+		for (int i = 0; i < low.length;i++)
+		{
+			System.out.println(!Niu.Protocol4(ElGamalCipher.encrypt(e_pk, low[i]), 
+					ElGamalCipher.encrypt(e_pk, mid[i])));
+			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(e_pk, mid[i]), 
+					ElGamalCipher.encrypt(e_pk, mid[i])));
+			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(e_pk, high[i]), 
+					ElGamalCipher.encrypt(e_pk, mid[i])));
+		}
+	}
+
+	public static void bob_demo_ElGamal() throws ClassNotFoundException, IOException
+	{
+		if(!e_pk.ADDITIVE)
+		{
+			// Addition
+			andrew.addition(true);
+			andrew.addition(true);
+			andrew.addition(true);
+			// Subtract
+			andrew.addition(false);
+			andrew.addition(false);
+			andrew.addition(false);
+			return;
+		}
+
+		for(int i = 0; i < 3; i++)
+		{
+			andrew.ElGamal_multiplication();
+		}
+
+		// Division Test, ElGamal	
+		andrew.ElGamal_division(2);
+		andrew.ElGamal_division(3);
+		andrew.ElGamal_division(4);
+		andrew.ElGamal_division(5);
+		andrew.ElGamal_division(25);
+
+		// Test Protocol 4 with ElGamal
+		for(int i = 0; i < mid.length * 3; i++)
+		{
+			andrew.ElGamal_Protocol4();
+		}
+	}
+	
+	// -------------------------------show basic functionality of Protocol 1 - 4  with DGK and Paillier-------------------------
+	
+	public static void alice_Paillier() 
+			throws ClassNotFoundException, IOException, IllegalArgumentException
+	{
+		System.out.println("Start Paillier Test");
+		Niu.setDGKMode(false);
+		long start;
+		BigInteger x = NTL.generateXBitRandom(15);
+		BigInteger y = NTL.generateXBitRandom(15);
+		BigInteger a = NTL.generateXBitRandom(15);
+		System.out.println("x: " + x);
+		System.out.println("y: " + y);
+		System.out.println("a: " + a);
+		System.out.println("N: " + pk.getN());
+		x = PaillierCipher.encrypt(x, pk);
+		y = PaillierCipher.encrypt(y, pk);
+		
+		// MULTIPLICATION
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.multiplication(x, y);
+		}
+		System.out.println("Multiplication, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// DIVISION
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.division(x, 1000);
+		}
+		System.out.println("Division, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 1
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol1(a);
+		}
+		System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 2
+		if(!Niu.isDGK())
+		{
+			start = System.nanoTime();
+			for(int i = 0; i < TEST; i++)
+			{
+				Niu.Protocol2(x, y);
+			}
+			System.out.println("Protocol 2, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");	
+		}
+		
+		// PROTOCOL 3
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol3(a);
+		}
+		System.out.println("Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// Modified Protocol 3
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Modified_Protocol3(a);
+		}
+		System.out.println("Modified Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 4
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol4(x, y);
+		}
+		System.out.println("Protocol 4, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+	}
+	
+	public static void alice_DGK()
+			throws ClassNotFoundException, IOException, IllegalArgumentException
+	{
+		System.out.println("Start DGK Test");
+		long start;
+		Niu.setDGKMode(true);
+		BigInteger x = NTL.generateXBitRandom(15);
+		BigInteger y = NTL.generateXBitRandom(15);
+		BigInteger a = NTL.generateXBitRandom(15);
+		System.out.println("x: " + x);
+		System.out.println("y: " + y);
+		System.out.println("a: " + a);
+		System.out.println("u: " + pubKey.getU());
+		x = DGKOperations.encrypt(pubKey, x);
+		y = DGKOperations.encrypt(pubKey, y);
+		
+		// MULTIPLICATION
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.multiplication(x, y);
+		}
+		System.out.println("Multiplication, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// DIVISION
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.division(x, 1000);
+		}
+		System.out.println("Division, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 1
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol1(a);
+		}
+		System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 2
+		if(!Niu.isDGK())
+		{
+			start = System.nanoTime();
+			for(int i = 0; i < TEST; i++)
+			{
+				Niu.Protocol2(x, y);
+			}
+			System.out.println("Protocol 2, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		}
+		else
+		{
+			System.out.println("Protocol 2, does not work for comparing two DGK encrypted values!");
+		}
+		
+		// PROTOCOL 3
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol3(a);
+		}
+		System.out.println("Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Modified_Protocol3(a);
+		}
+		System.out.println("Modified Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 4
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol4(x, y);
+		}
+		System.out.println("Protocol 4, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+	}
+	
+	public static void bob() 
+			throws ClassNotFoundException, IOException, IllegalArgumentException
+	{
+		BigInteger b = NTL.generateXBitRandom(15);
+		System.out.println("b: " + b);
+		// Test Code
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.multiplication();
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.division(1000);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Protocol1(b);
+		}
+		
+		if(!andrew.isDGK())
+		{
+			for(int i = 0; i < TEST; i++)
+			{
+				andrew.Protocol2();
+			}
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Protocol3(b);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Modified_Protocol3(b);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Protocol4();	
+		}
+	}
+	
+	// ------------------------------------ Stress Test Protocol 1 - 4 ElGamal-----------------------------------
+	public static void alice_ElGamal() 
+			throws ClassNotFoundException, IOException, IllegalArgumentException
+	{
+		System.out.println("Start ElGamal Test");
+		long start;
+		BigInteger _x = NTL.generateXBitRandom(15);
+		BigInteger _y = NTL.generateXBitRandom(15);
+		BigInteger a = NTL.generateXBitRandom(15);
+		System.out.println("x : " + _x);
+		System.out.println("y : " + _y);
+		System.out.println("a : " + a);
+		System.out.println("u : " + CipherConstants.FIELD_SIZE);
+		ElGamal_Ciphertext x = ElGamalCipher.encrypt(e_pk, _x);
+		ElGamal_Ciphertext y = ElGamalCipher.encrypt(e_pk, _y);
+		
+		if(!e_pk.ADDITIVE)
+		{
+			start = System.nanoTime();
+			for(int i = 0; i < TEST; i++)
+			{
+				Niu.addition(x, y);
+			}
+			System.out.println("Addition, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+			return;
+		}
+		// MULTIPLICATION
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.multiplication(x, y);
+		}
+		System.out.println("Multiplication, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+
+		// DIVISION
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.division(x, 1000);
+		}
+		System.out.println("Division, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 1
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol1(a);
+		}
+		System.out.println("Protocol 1, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 2
+		System.out.println("Protocol 2, doesn't work for comparing two ElGamal encrypted values!");
+		
+		// PROTOCOL 3
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol3(a);
+		}
+		System.out.println("Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 3
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Modified_Protocol3(a);
+		}
+		System.out.println("Modified Protocol 3, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+		
+		// PROTOCOL 4
+		start = System.nanoTime();
+		for(int i = 0; i < TEST; i++)
+		{
+			Niu.Protocol4(x, y);
+		}
+		System.out.println("Protocol 4, Time to complete " + TEST + " tests: " + (System.nanoTime() - start)/BILLION + " seconds");
+	}
+	
+	public static void bob_ElGamal() 
+			throws ClassNotFoundException, IOException
+	{
+		BigInteger b = NTL.generateXBitRandom(15);
+		System.out.println("b: " + b);
+		
+		if(!e_pk.ADDITIVE)
+		{
+			for(int i = 0; i < TEST; i++)
+			{
+				andrew.addition(true);
+			}
+			return;
+		}
+		
+		// Test Code
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.ElGamal_multiplication();
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.ElGamal_division(1000);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Protocol1(b);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Protocol3(b);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.Modified_Protocol3(b);
+		}
+		
+		for(int i = 0; i < TEST; i++)
+		{
+			andrew.ElGamal_Protocol4();	
+		}
+	}
+	
+	// ------------------------------------ Generate numbers for Protocol 1-4 testing---------------------------
+	//---------------------Generate numbers-----------------------------------
+	public static BigInteger [] generate_low()
+	{
+		BigInteger [] test_set = new BigInteger[16];
+		test_set[0] = new BigInteger("1");
+		test_set[1] = new BigInteger("2");
+		test_set[2] = new BigInteger("4");
+		test_set[3] = new BigInteger("8");
+		test_set[4] = new BigInteger("16");
+		test_set[5] = new BigInteger("32");
+		test_set[6] = new BigInteger("64");
+		test_set[7] = new BigInteger("128");
+		test_set[8] = new BigInteger("256");
+		test_set[9] = new BigInteger("512");
+		
+		test_set[10] = new BigInteger("1024");
+		test_set[11] = new BigInteger("2048");
+		test_set[12] = new BigInteger("4096");
+		test_set[13] = new BigInteger("8192");
+		test_set[14] = new BigInteger("16384");
+		test_set[15] = new BigInteger("32768");
+		
+		BigInteger t = BigInteger.ZERO;
+		for (int i = 0; i < test_set.length;i++)
+		{
+			test_set[i] = test_set[i].add(t);
+		}
+		return test_set;
+	}
+	
+	
+	public static BigInteger[] generate_mid()
+	{
+		BigInteger [] test_set = new BigInteger[16];
+		test_set[0] = new BigInteger("1");
+		test_set[1] = new BigInteger("2");
+		test_set[2] = new BigInteger("4");
+		test_set[3] = new BigInteger("8");
+		test_set[4] = new BigInteger("16");
+		test_set[5] = new BigInteger("32");
+		test_set[6] = new BigInteger("64");
+		test_set[7] = new BigInteger("128");
+		test_set[8] = new BigInteger("256");
+		test_set[9] = new BigInteger("512");
+		
+		test_set[10] = new BigInteger("1024");
+		test_set[11] = new BigInteger("2048");
+		test_set[12] = new BigInteger("4096");
+		test_set[13] = new BigInteger("8192");
+		test_set[14] = new BigInteger("16384");
+		test_set[15] = new BigInteger("32768");
+		
+		BigInteger t = new BigInteger("5");
+		for (int i = 0; i < test_set.length; i++)
+		{
+			test_set[i] = test_set[i].add(t);
+		}
+		return test_set;
+	}
+	
+	
+	public static BigInteger[] generate_high()
+	{
+		BigInteger [] test_set = new BigInteger[16];
+		
+		test_set[0] = new BigInteger("1");
+		test_set[1] = new BigInteger("2");
+		test_set[2] = new BigInteger("4");
+		test_set[3] = new BigInteger("8");
+		test_set[4] = new BigInteger("16");
+		test_set[5] = new BigInteger("32");
+		test_set[6] = new BigInteger("64");
+		test_set[7] = new BigInteger("128");
+		test_set[8] = new BigInteger("256");
+		test_set[9] = new BigInteger("512");
+		
+		test_set[10] = new BigInteger("1024");
+		test_set[11] = new BigInteger("2048");
+		test_set[12] = new BigInteger("4096");
+		test_set[13] = new BigInteger("8192");
+		test_set[14] = new BigInteger("16384");
+		test_set[15] = new BigInteger("32768");
+		
+		BigInteger t = new BigInteger("10");
+		for (int i = 0; i < test_set.length; i++)
+		{
+			test_set[i] = test_set[i].add(t);
+		}
+		return test_set;
+	}
+	
 	// ----------------------------All Stress Test methods for Crypto-------------------------------------------------
+
+	//------------------------------------- Stress test crypto methods------------------------------------------
 	public static void Paillier_Test() throws InvalidKeyException, SignatureException
 	{
 		System.out.println("-----------PAILLIER TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
@@ -976,7 +983,7 @@ public class Main
 		sig.initSign(sk);
 		sig.update(new BigInteger("42").toByteArray());
 		byte [] cert = sig.sign();
-
+		
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE;i++)
 		{
@@ -1029,6 +1036,7 @@ public class Main
 		}
 		System.out.println("Time to complete addition (plaintext): " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
+	
 	
 	public static void DGK_Test() throws InvalidKeyException, SignatureException
 	{
@@ -1092,6 +1100,7 @@ public class Main
 		System.out.println("Time to complete addition (plaintext): " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
 	
+	
 	public static void ElGamal_Test() throws SignatureException, InvalidKeyException
 	{
 		System.out.println("-----------EL-GAMAL TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
@@ -1147,6 +1156,7 @@ public class Main
 		}
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
+	
 	
 	public static void GM_Test()
 	{
