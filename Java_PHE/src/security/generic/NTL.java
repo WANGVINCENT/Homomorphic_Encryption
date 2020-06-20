@@ -196,6 +196,15 @@ public class NTL implements CipherConstants
 
 	public static int bit(BigInteger a, long k)
 	{
+		if(a.testBit((int) k))
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+		/*
 		//If the value k (location of bit is bigger than a
 		if (k >= a.bitLength())
 		{
@@ -214,6 +223,7 @@ public class NTL implements CipherConstants
 		{
 			return 1;
 		}
+		*/
 	}
 
 	public static int bit(long a, long k)

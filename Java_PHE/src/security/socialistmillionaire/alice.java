@@ -107,7 +107,6 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger [] Encrypted_Y = null;
 		BigInteger [] C = null;
 		BigInteger [] XOR = null;
-		//BigInteger s = null;
 
 		// Step 1: Get Y bits from Bob
 		in = fromBob.readObject();
@@ -138,12 +137,10 @@ public final class alice extends socialist_millionaires implements Runnable
 		XOR = new BigInteger[Encrypted_Y.length];
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
-			//Enc[x XOR y] = [y_i]
 			if (NTL.bit(x, i) == 1)
 			{
 				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);	
 			}
-			//Enc[x XOR y] = [1] - [y_i]
 			else
 			{
 				XOR[i] = Encrypted_Y[i];
@@ -160,8 +157,7 @@ public final class alice extends socialist_millionaires implements Runnable
 			*/
 		}
 
-		// Step 3: Alice picks deltaA and computes S
-		//s = DGKOperations.encrypt(pubKey, 1 - 2 * deltaA);
+		// Step 3: Alice picks deltaA and computes s 
 
 		// Step 4: Compute C_i
 		C = new BigInteger[Encrypted_Y.length + 1];
@@ -173,8 +169,14 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			C[i] = DGKOperations.multiply(pubKey, DGKOperations.sum(pubKey, XOR, i), 3);
 			C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1 - 2 * deltaA);
-			C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(x, i));
 			C[i] = DGKOperations.subtract(pubKey, C[i], Encrypted_Y[i]);
+			C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(x, i));
+			/*
+			if(x.testBit(i))
+			{
+				C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1);
+			}
+			*/
 		}
 
 		//This is c_{-1}

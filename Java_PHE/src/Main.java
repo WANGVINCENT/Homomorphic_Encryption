@@ -86,6 +86,25 @@ public class Main
 			// DO NOT USE ASSERT WHEN CONDUCTING THE TESTS!!!!
 			if (isAlice)
 			{
+				BigInteger y = new BigInteger("65");
+				for (int i = 0; i < y.bitLength(); i++)
+				{
+					if(y.testBit(i))
+					{
+						System.out.print("1");
+					}
+					else
+					{
+						System.out.print("0");
+					}
+				}
+				System.out.println();
+				for (int i = 0; i < y.bitLength(); i++)
+				{
+					System.out.print(NTL.bit(y, i));
+				}
+				System.out.println();
+				
 				// I need to ensure that Alice has same Keys as Bob! and initialize as well
 				Niu = new alice(new Socket("192.168.1.208", 9254), true);
 				
@@ -756,10 +775,12 @@ public class Main
 		{
 			System.out.println(Niu.Protocol1(l));
 		}
+		System.out.println("Test 2");
 		for(BigInteger l: mid)
 		{
 			System.out.println(Niu.Protocol1(l));
 		}
+		System.out.println("Test 3");
 		for(BigInteger l: high)
 		{
 			System.out.println(!Niu.Protocol1(l));

@@ -198,8 +198,8 @@ public final class bob extends socialist_millionaires implements Runnable
 		//Step 1: Bob sends encrypted bits to Alice
 		BigInteger [] EncY = new BigInteger[y.bitLength()];
 		for (int i = 0; i < y.bitLength(); i++)
-		//for (int i = EncY.length - 1; i >= 0 ; i--)
 		{
+			/*
 			if(y.testBit(i))
 			{
 				EncY[i] = DGKOperations.encrypt(pubKey, 1);
@@ -208,6 +208,7 @@ public final class bob extends socialist_millionaires implements Runnable
 			{
 				EncY[i] = DGKOperations.encrypt(pubKey, 0);	
 			}
+			*/
 			EncY[i] = DGKOperations.encrypt(pubKey, NTL.bit(y, i));
 		}
 		toAlice.writeObject(EncY);
