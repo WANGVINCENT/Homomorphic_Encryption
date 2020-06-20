@@ -453,7 +453,8 @@ public class ElGamalCipher extends CipherSpi
 			// If I get this, there is a chance I might have a negative number to make?
 			if (m.compareTo(CipherConstants.FIELD_SIZE) == 1)
 			{
-				m = m.mod(CipherConstants.FIELD_SIZE);
+				//m = m.mod(CipherConstants.FIELD_SIZE);
+				m = m.mod(key.p.subtract(BigInteger.ONE));
 			}
 			return m;
 		}
