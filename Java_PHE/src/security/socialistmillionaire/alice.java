@@ -1180,7 +1180,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Division: c is not found!");
+			throw new IllegalArgumentException("Division: c is not found: " + in.getClass().getName());
 		}
 		
 		// Step 5: Alice computes [x/d]
@@ -1257,7 +1257,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob");
+			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob: " + in.getClass().getName());
 		}
 		return result;
 	}
@@ -1327,7 +1327,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob");
+			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob: " + in.getClass().getName());
 		}
 		return result;
 	}
@@ -1376,7 +1376,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Alice: BigInteger not found! " + in.getClass());
+			throw new IllegalArgumentException("Alice: BigInteger not found! " + in.getClass().getName());
 		}
 		
 		// Step 5: Alice computes [x/d]
@@ -1447,7 +1447,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob");
+			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob: " + in.getClass().getName());
 		}
 		return result;
 	}

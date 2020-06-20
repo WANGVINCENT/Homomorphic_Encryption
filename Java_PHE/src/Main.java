@@ -469,6 +469,15 @@ public class Main
 		ElGamal_Ciphertext x = ElGamalCipher.encrypt(e_pk, _x);
 		ElGamal_Ciphertext y = ElGamalCipher.encrypt(e_pk, _y);
 		
+		if(!e_pk.ADDITIVE)
+		{
+			for(int i = 0; i < 3; i++)
+			{
+				Niu.addition(x, y);
+				Niu.addition(x, y);
+			}
+			return;
+		}
 		// MULTIPLICATION
 		start = System.nanoTime();
 		for(int i = 0; i < TEST; i++)
@@ -525,11 +534,23 @@ public class Main
 	{
 		BigInteger b = NTL.generateXBitRandom(15);
 		System.out.println("b: " + b);
+		
+		if(!e_pk.ADDITIVE)
+		{
+			for(int i = 0; i < 3; i++)
+			{
+				// Add then subtract!
+				andrew.addition(true);
+				andrew.addition(false);
+			}
+			return;
+		}
+		
 		// Test Code
 		
 		for(int i = 0; i < TEST; i++)
 		{
-			andrew.multiplication();
+			andrew.ElGamal_multiplication();
 		}
 		
 		for(int i = 0; i < TEST; i++)
@@ -770,17 +791,14 @@ public class Main
 		}
 		
 		// Test Protocol 1
-		System.out.println("Protocol 1 Tests...");
 		for(BigInteger l: low)
 		{
 			System.out.println(Niu.Protocol1(l));
 		}
-		System.out.println("Test 2");
 		for(BigInteger l: mid)
 		{
 			System.out.println(Niu.Protocol1(l));
 		}
-		System.out.println("Test 3");
 		for(BigInteger l: high)
 		{
 			System.out.println(!Niu.Protocol1(l));

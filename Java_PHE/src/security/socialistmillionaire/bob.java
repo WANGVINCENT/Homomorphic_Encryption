@@ -775,7 +775,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x']] from Alice");
+			throw new IllegalArgumentException("Didn't get [[x']] from Alice: " + in.getClass().getName());
 		}
 
 		in = fromAlice.readObject();
@@ -785,7 +785,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[y']] from Alice");		
+			throw new IllegalArgumentException("Didn't get [[y']] from Alice: " + in.getClass().getName());		
 		}
 
 		// Step 3
@@ -853,7 +853,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x']] from Alice");
+			throw new IllegalArgumentException("Didn't get [[x']] from Alice: " + in.getClass().getName());
 		}
 		
 		in = fromAlice.readObject();
@@ -863,7 +863,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[y']] from Alice");		
+			throw new IllegalArgumentException("Didn't get [[y']] from Alice: " + in.getClass().getName());		
 		}
 		
 		// Step 3
@@ -888,7 +888,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x']] from Alice");
+			throw new IllegalArgumentException("Didn't get [[x']] from Alice: " + in.getClass().getName());
 		}
 		
 		in = fromAlice.readObject();
@@ -898,7 +898,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[y']] from Alice");		
+			throw new IllegalArgumentException("Didn't get [[y']] from Alice: " + in.getClass().getName());		
 		}
 		
 		// Step 3
@@ -931,7 +931,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Divison: No BigInteger found!");
+			throw new IllegalArgumentException("Divison: No BigInteger found: " + alice.getClass().getName());
 		}
 		
 		if(isDGK)
