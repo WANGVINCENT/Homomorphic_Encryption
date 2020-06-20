@@ -4,6 +4,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
 import java.util.ArrayList;
@@ -85,7 +86,7 @@ public class Main
 		{
 			if (isAlice)
 			{	
-				Niu = new alice(new Socket("192.168.1.208", 9254), true);
+				Niu = new alice(new Socket("192.168.1.208", 9254));
 				pk = Niu.getPaillierPublicKey();
 				pubKey = Niu.getDGKPublicKey();
 				e_pk = Niu.getElGamalPublicKey();
@@ -128,7 +129,7 @@ public class Main
 				ElGamalKeyPairGenerator pg = new ElGamalKeyPairGenerator();
 				// NULL -> ADDITIVE
 				// NOT NULL -> MULTIPLICATIVE
-				pg.initialize(KEY_SIZE, null);
+				pg.initialize(KEY_SIZE, new SecureRandom());
 				KeyPair el_gamal = pg.generateKeyPair();
 				e_pk = (ElGamalPublicKey) el_gamal.getPublic();
 				e_sk = (ElGamalPrivateKey) el_gamal.getPrivate();
@@ -141,15 +142,15 @@ public class Main
 				gm_sk = (GMPrivateKey) gm.getPrivate();
 				
 				// Stress Test
-				//GM_Test();
-				//Paillier_Test();
-				//DGK_Test();
-				//ElGamal_Test();
+				// GM_Test();
+				// Paillier_Test();
+				// DGK_Test();
+				// ElGamal_Test();
 				
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
-				andrew = new bob(bob_client, pe, DGK, el_gamal, true);
+				andrew = new bob(bob_client, pe, DGK, el_gamal);
 				
 				// Test K-Min using Protocol 4
 				// Line 99 in Alice matches to Line 158-165 in Bob
@@ -181,7 +182,6 @@ public class Main
 		}
 		catch(IllegalArgumentException o)
 		{
-			System.out.println("LIBRARY THREW ERROR ON RUNTIME!");
 			o.printStackTrace();
 		}
 		catch(Exception e)

@@ -32,10 +32,14 @@ public final class ElGamalPrivateKey implements ElGamal_Key, Serializable, Priva
 		this.g = g;
 		this.h = h;
 		this.ADDITIVE = ADDITIVE;
-		this.LUT = new HashMap<BigInteger, BigInteger>(FIELD_SIZE.intValue(), (float) 1.0);
 		if(ADDITIVE)
 		{
+			this.LUT = new HashMap<BigInteger, BigInteger>(FIELD_SIZE.intValue(), (float) 1.0);
 			this.decrypt_table();
+		}
+		else
+		{
+			this.LUT = null;
 		}
 	}
 

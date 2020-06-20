@@ -19,8 +19,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 import security.paillier.PaillierPublicKey;
-import security.generic.NTL;
 import security.paillier.PaillierPrivateKey;
+import security.generic.NTL;
 
 public final class PaillierCipher extends CipherSpi
 {

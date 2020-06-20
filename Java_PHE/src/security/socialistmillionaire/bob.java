@@ -19,50 +19,17 @@ import security.paillier.PaillierCipher;
 import security.paillier.PaillierPublicKey;
 import security.paillier.PaillierPrivateKey;
 
-/**
-Credits to Andrew Quijano and Dr. Samet Tonyali
-
-Alice has [[x]] and [[y]]
-Bob has the DGK and Paillier Public Keys
-
-Terms of Use:
-Feel free to use this code as you like.
-
-DGK was created in 2007 by:
-Ivan Damgard, Martin Geisler, and Mikkel Kroigaard (DGK).
-
-Title of Papers: (Source of Protocol 1, Protocol 2)
-Efficient and Secure Comparison for On-Line auctions (2007)
-A correction to Efficient and Secure Comparison for Online auctions (2009)
-
-Protocol 3 and Protocol 4 was created referencing Thjis Veugen's Paper:
-Improving the DGK Comparison Protocol (2012)
-*/
-
 public final class bob extends socialist_millionaires implements Runnable
 {
 	// YOU SHOULD USE THIS CONSTRUCTOR!
 	public bob (Socket clientSocket,
 			KeyPair a, KeyPair b) throws IOException, IllegalArgumentException
 	{
-		this(clientSocket, a, b, null, false);
-	}
-	
-	// YOU SHOULD USE THIS CONSTRUCTOR!
-	public bob (Socket clientSocket,
-			KeyPair a, KeyPair b, KeyPair c) throws IOException, IllegalArgumentException
-	{
-		this(clientSocket, a, b, c, false);
+		this(clientSocket, a, b, null);
 	}
 	
 	public bob (Socket clientSocket,
-			KeyPair a, KeyPair b, boolean IS_DEBUG) throws IOException, IllegalArgumentException
-	{
-		this(clientSocket, a, b, null, IS_DEBUG);
-	}
-	
-	public bob (Socket clientSocket,
-			KeyPair a, KeyPair b, KeyPair c, boolean IS_DEBUG) 
+			KeyPair a, KeyPair b, KeyPair c) 
 					throws IOException, IllegalArgumentException
 	{
 		if(clientSocket != null)
@@ -106,7 +73,6 @@ public final class bob extends socialist_millionaires implements Runnable
 		
 		if(c != null)
 		{
-			// IF YOU GIVE BOB A THIRD KEY PAIR, IT MUST BE EL GAMAL!
 			if (c.getPublic() instanceof ElGamalPublicKey)
 			{
 				this.e_pk = (ElGamalPublicKey) c.getPublic();
@@ -122,10 +88,8 @@ public final class bob extends socialist_millionaires implements Runnable
 		this.isDGK = false;
 		powL = TWO.pow(pubKey.getL());
 		
-		if(IS_DEBUG)
-		{
-			this.debug();
-		}
+		// ONLY IN DEBUG/DEVELOP
+		this.debug();
 	}
 	
 	// This is used for Alice to sort an array of encryped numbers!
@@ -235,7 +199,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Protocol 1, Step 6: Invalid object!");
+			throw new IllegalArgumentException("Protocol 1, Step 6: Invalid object: " + in.getClass().getName());
 		}
 
 		for (BigInteger C_i: C)
@@ -262,7 +226,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Invalid response from Alice in Step 8!");
+			throw new IllegalArgumentException("Invalid response from Alice in Step 8: " + in.getClass().getName());
 		}
 	}
 	
@@ -292,7 +256,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Bob Step 1: Obtaining Z failed!");
+			throw new IllegalArgumentException("Bob Step 1: Invalid Object!" + x.getClass().getName());
 		}
 
 		//[[z]] = [[x - y + 2^l + r]]
@@ -323,7 +287,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("No response from Alice in Step 8!");
+			throw new IllegalArgumentException("Invalid response from Alice in Step 8! " + x.getClass().getName());
 		}
 	}
 
@@ -428,7 +392,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Protocol 3, Step 4: Invalid object!");
+			throw new IllegalArgumentException("Protocol 3, Step 4: Invalid object! " + x.getClass().getName());
 		}
 
 		// Step 7: Return Gamma B to Alice, Alice will compute GammaA XOR GammaB
@@ -445,7 +409,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Invalid response from Alice in Step 8!");
+			throw new IllegalArgumentException("Invalid response from Alice in Step 8! " + x.getClass().getName());
 		}
 	}
 	
@@ -553,7 +517,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Modified Protocol3: invalid input in Step J");
+			throw new IllegalArgumentException("Modified Protocol3: invalid input in Step J " + in.getClass().getName());
 		}
 
 		for (BigInteger C_i: C)
@@ -575,7 +539,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Modified_Protocol 3, Step 8 Invalid Object!");
+			throw new IllegalArgumentException("Modified_Protocol 3, Step 8 Invalid Object! " + in.getClass().getName());
 		}
 		toAlice.flush();
 		return answer == 1;
@@ -605,7 +569,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Protocol 4: No BigInteger found!");
+			throw new IllegalArgumentException("Protocol 4: No BigInteger found! " + x.getClass().getName());
 		}
 
 		if(isDGK)
@@ -681,7 +645,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Protocol 4, Step 8 Failed");
+			throw new IllegalArgumentException("Protocol 4, Step 8 Failed " + x.getClass().getName());
 		}
 		return answer == 1;
 	}
@@ -706,7 +670,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Protocol 4: No ElGamal_Ciphertext found!");
+			throw new IllegalArgumentException("Protocol 4: No ElGamal_Ciphertext found! " + x.getClass().getName());
 		}
 		z = ElGamalCipher.decrypt(e_sk, enc_z);
 		
@@ -752,7 +716,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Protocol 4, Step 8 Failed");
+			throw new IllegalArgumentException("Protocol 4, Step 8 Failed " + x.getClass().getName());
 		}
 		return answer == 1;
 	}
@@ -815,7 +779,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Divison: No ElGamal Ciphertext found!");
+			throw new IllegalArgumentException("Divison: No ElGamal Ciphertext found! " + alice.getClass().getName());
 		}
 	
 		z = ElGamalCipher.decrypt(e_sk, enc_z);

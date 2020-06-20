@@ -66,20 +66,20 @@ public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Run
 	{
 		return "DGK";
 	}
-	
-    public String toString()
-    {
-    	String answer = "";
-    	answer += "n: " + n + ", " + '\n';
-    	answer += "g: " + g + ", " + '\n';
-    	answer += "h: " + h + ", " + '\n';
-    	answer += "u: " + bigU + ", " + '\n';
-    	answer += "l: " + l + ", " + '\n';
-    	answer += "t: " + t + ", " + '\n';
-    	answer += "k: " + k + ", " + '\n';
-    	return answer;
-    }
-    
+
+	public String toString()
+	{
+		String answer = "";
+		answer += "n: " + n + ", " + '\n';
+		answer += "g: " + g + ", " + '\n';
+		answer += "h: " + h + ", " + '\n';
+		answer += "u: " + bigU + ", " + '\n';
+		answer += "l: " + l + ", " + '\n';
+		answer += "t: " + t + ", " + '\n';
+		answer += "k: " + k + ", " + '\n';
+		return answer;
+	}
+
 	public String getFormat() 
 	{
 		return "X.509";
@@ -95,7 +95,7 @@ public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Run
 		this.generatehLUT();
 		this.generategLUT();
 	}
-	
+
 	private void generatehLUT()
 	{		
 		for (long i = 0; i < 2 * t; ++i)
@@ -107,7 +107,7 @@ public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Run
 			this.hLUT.put(i, this.h.modPow(e, this.n));
 		}
 	}
-	
+
 	private void generategLUT()
 	{	
 		for (long i = 0; i < this.u; ++i)
@@ -126,7 +126,7 @@ public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Run
 	{
 		return this.n;
 	}
-	
+
 	public int getL()
 	{
 		return this.l;

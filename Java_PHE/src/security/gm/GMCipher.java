@@ -37,7 +37,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final void engineSetMode(String mode)
 			throws NoSuchAlgorithmException 
 	{
-		throw new NoSuchAlgorithmException("Goldweisser-Micali supports no modes.");
+		throw new NoSuchAlgorithmException("Goldwasser-Micali supports no modes.");
 	}
 
 	/**
@@ -47,7 +47,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final void engineSetPadding(String padding)
 			throws NoSuchPaddingException 
 	{
-		throw new NoSuchPaddingException("Goldweisser-Micali supports no padding.");
+		throw new NoSuchPaddingException("Goldwasser-Micali supports no padding.");
 	}
 
 	/**
@@ -102,8 +102,6 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final int decrypt(byte[] input, int inputOffset, int inputLenth,
 			byte[] output, int outputOffset)
 	{
-		GMPrivateKey key = (GMPrivateKey) keyGM;
-
 		// extract c
 		byte[] cBytes = new byte[input.length];
 		System.arraycopy(input, inputOffset, cBytes, 0, input.length);
@@ -118,14 +116,14 @@ public class GMCipher extends CipherSpi implements CipherConstants
 			BigInteger b = new BigInteger(c_i);
 			c.add(b);
 		}
-		byte [] messageBytes = decrypt(c, key).toByteArray();
+		byte [] messageBytes = decrypt(c, (GMPrivateKey) keyGM).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
 		return plaintextSize;
 	}
 
 	/**
-	 * PaillierHomomorphicCipher doesn't recognise any algorithm - specific initialisations
+	 * GM HomomorphicCipher doesn't recognise any algorithm - specific initialisations
 	 * so the algorithm specific engineInit() just calls the previous overloaded
 	 * version of engineInit()
 	 * 

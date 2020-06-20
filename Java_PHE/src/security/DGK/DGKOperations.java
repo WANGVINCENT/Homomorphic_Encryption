@@ -11,11 +11,8 @@ import javax.crypto.ShortBufferException;
 
 import security.DGK.DGKPrivateKey;
 import security.DGK.DGKPublicKey;
-
+import security.generic.CipherConstants;
 import security.generic.NTL;
-import security.paillier.PaillierKey;
-import security.paillier.PaillierPrivateKey;
-import security.paillier.PaillierPublicKey;
 
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
@@ -30,18 +27,8 @@ import java.security.spec.AlgorithmParameterSpec;
 
 import java.util.ArrayList;
 
-/*
- * Credits to Andrew Quijano for code conversion and 
- * Samet Tonyali for helping on revising/debugging the library.
- * 
- * DGK was created in 2007 by:
- * Ivan Damgard, Martin Geisler, and Mikkel Kroigaard (DGK).
- * Title of Papers: 
- * Efficient and Secure Comparison for On-Line auctions (2007)
- * A correction to Efficient and Secure Comparison for Online auctions(2009)
- */
 
-public final class DGKOperations extends CipherSpi
+public final class DGKOperations extends CipherSpi implements CipherConstants
 {
 	protected int stateMode;
 	protected Key keyDGK;
@@ -56,7 +43,7 @@ public final class DGKOperations extends CipherSpi
 	protected final void engineSetMode(String mode)
 			throws NoSuchAlgorithmException 
 	{
-		throw new NoSuchAlgorithmException("Paillier supports no modes.");
+		throw new NoSuchAlgorithmException("DGK supports no modes.");
 	}
 
 	/**
@@ -66,7 +53,7 @@ public final class DGKOperations extends CipherSpi
 	protected final void engineSetPadding(String padding)
 			throws NoSuchPaddingException 
 	{
-		throw new NoSuchPaddingException("Paillier supports no padding.");
+		throw new NoSuchPaddingException("DGK supports no padding.");
 	}
 
 	/**
@@ -129,7 +116,7 @@ public final class DGKOperations extends CipherSpi
 	}
 
 	/**
-	 * PaillierHomomorphicCipher doesn't recognise any algorithm - specific initialisations
+	 * GM HomomorphicCipher doesn't recognise any algorithm - specific initialisations
 	 * so the algorithm specific engineInit() just calls the previous overloaded
 	 * version of engineInit()
 	 * 
@@ -340,14 +327,14 @@ public final class DGKOperations extends CipherSpi
 	{
 		if (mode == Cipher.ENCRYPT_MODE)
 		{
-			if (!(key instanceof PaillierPublicKey))
+			if (!(key instanceof DGKPublicKey))
 			{
 				throw new InvalidKeyException("I didn't get a DGKPublicKey!");
 			}
 		}
 		else if (mode == Cipher.DECRYPT_MODE)
 		{
-			if (!(key instanceof PaillierPrivateKey))
+			if (!(key instanceof DGKPrivateKey))
 			{
 				throw new InvalidKeyException("I didn't get a DGKPrivateKey!");
 			}
@@ -359,7 +346,7 @@ public final class DGKOperations extends CipherSpi
 		this.stateMode = mode;
 		this.keyDGK = key;
 		this.SECURE_RANDOM = random;
-		int modulusLength = ((PaillierKey) key).getN().bitLength();
+		int modulusLength = ((DGK_Key) key).getN().bitLength();
 		calculateBlockSizes(modulusLength);
 	}
 
@@ -500,8 +487,8 @@ public final class DGKOperations extends CipherSpi
 		{
 			throw new IllegalArgumentException("DGKAdd Invalid Parameter a: at least one of the ciphertext is not in Zn: " + a);
 		}
-		// will accept plaintext -1 because of Protocol 1 and Modified Protocol 3
-		else if (plaintext.compareTo(new BigInteger("-1")) == -1 || plaintext.compareTo(pubKey.bigU) == 1)
+		// will accept plaintext -1 because of Protocol 1 and Modified Protocol 3 need it
+		else if (plaintext.compareTo(NEG_ONE) == -1 || plaintext.compareTo(pubKey.bigU) == 1)
 		{
 			throw new IllegalArgumentException("DGKAdd Invalid Parameter b: at least one of the ciphertext is not in Zn: " + plaintext);		
 		}
@@ -654,13 +641,13 @@ public final class DGKOperations extends CipherSpi
 	}
 	
 	// PUBLIC FACING METHODS
-	public void init(int encryptMode, PaillierPublicKey pk) 
+	public void init(int encryptMode, DGKPublicKey pk) 
 			throws InvalidKeyException, InvalidAlgorithmParameterException
 	{
 		engineInit(encryptMode, pk, new SecureRandom());
 	}
 
-	public void init(int decryptMode, PaillierPrivateKey sk)
+	public void init(int decryptMode, DGKPrivateKey sk)
 			throws InvalidKeyException, InvalidAlgorithmParameterException 
 	{
 		engineInit(decryptMode, sk, new SecureRandom());

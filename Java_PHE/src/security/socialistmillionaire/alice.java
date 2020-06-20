@@ -46,14 +46,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	// Current Algorithm to Sort with
 	private Algorithm algo;
 
-	// YOU SHOULD USE THIS CONSTRUCTOR!
 	public alice (Socket clientSocket) throws IOException, ClassNotFoundException
-	{
-		this(clientSocket, false);
-	}
-
-	public alice (Socket clientSocket,
-			boolean is_testing) throws IOException, ClassNotFoundException
 	{
 		if(clientSocket != null)
 		{
@@ -70,10 +63,8 @@ public final class alice extends socialist_millionaires implements Runnable
 		this.receivePublicKeys();
 		powL = TWO.pow(pubKey.getL());
 
-		if(is_testing)
-		{
-			this.debug();
-		}
+		// LINE 66 ONLY FOR DEBUG/DEVELOP
+		this.debug();	
 	}
 
 	public void setSorting(List<BigInteger> toSort)
@@ -1441,7 +1432,7 @@ public final class alice extends socialist_millionaires implements Runnable
 				}
 				catch(IllegalArgumentException e)
 				{
-					System.out.println("[[x * y]] is out of scope of plain-text!");
+					System.out.println("[[x * y]] is out of scope of plain-text U!");
 				}
 			}
 		}

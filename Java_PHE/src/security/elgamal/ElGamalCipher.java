@@ -145,7 +145,7 @@ public class ElGamalCipher extends CipherSpi
 	}
 
 	/**
-	 * PaillierHomomorphicCipher doesn't recognise any algorithm - specific initialisations
+	 * El-Gamal HomomorphicCipher doesn't recognise any algorithm - specific initialisations
 	 * so the algorithm specific engineInit() just calls the previous overloaded
 	 * version of engineInit()
 	 * 
@@ -463,7 +463,7 @@ public class ElGamalCipher extends CipherSpi
 		}
 		else
 		{
-			throw new IllegalArgumentException("Entry not found! Key mismatched suspected!");
+			throw new IllegalArgumentException("Entry not found! Key mismatched suspected! Or it is out of scope of u!");
 		}
 	}
 

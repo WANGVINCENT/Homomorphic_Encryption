@@ -22,7 +22,7 @@ public final class ElGamalPublicKey implements Serializable, PublicKey, ElGamal_
 		this.h = h;
 		this.ADDITIVE = ADDITIVE;
 	}
-	
+
 	public String getAlgorithm() 
 	{
 		return "ElGamal";
@@ -37,29 +37,29 @@ public final class ElGamalPublicKey implements Serializable, PublicKey, ElGamal_
 	{
 		return null;
 	}
-	
+
 	public BigInteger getP() 
 	{
 		return this.p;
 	}
-	
-    private void readObject(ObjectInputStream aInputStream)
-            throws ClassNotFoundException,IOException
-    {
-        aInputStream.defaultReadObject();
-    }
 
-    private void writeObject(ObjectOutputStream aOutputStream) throws IOException
-    {
-        aOutputStream.defaultWriteObject();
-    }
-    
-    public String toString()
-    {
-    	String answer = "";
-    	answer += "p=" + this.p + '\n';
-    	answer += "g=" + this.g + '\n';
-    	answer += "h=" + this.h + '\n';
-    	return answer;
-    }
+	private void readObject(ObjectInputStream aInputStream)
+			throws ClassNotFoundException,IOException
+	{
+		aInputStream.defaultReadObject();
+	}
+
+	private void writeObject(ObjectOutputStream aOutputStream) throws IOException
+	{
+		aOutputStream.defaultWriteObject();
+	}
+
+	public String toString()
+	{
+		String answer = "";
+		answer += "p=" + this.p + '\n';
+		answer += "g=" + this.g + '\n';
+		answer += "h=" + this.h + '\n';
+		return answer;
+	}
 }
