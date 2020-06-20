@@ -23,6 +23,7 @@ import security.elgamal.ElGamalCipher;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamalSignature;
 import security.elgamal.ElGamal_Ciphertext;
+import security.generic.CipherConstants;
 import security.generic.NTL;
 import security.gm.GMCipher;
 import security.gm.GMKeyPairGenerator;
@@ -119,7 +120,7 @@ public class Main
 				
 				// Build Paillier Keys
 				PaillierKeyPairGenerator p = new PaillierKeyPairGenerator();
-				p.initialize(KEY_SIZE, new SecureRandom());
+				p.initialize(KEY_SIZE, null);
 				KeyPair pe = p.generateKeyPair();
 				pk = (PaillierPublicKey) pe.getPublic();
 				sk = (PaillierPrivateKey) pe.getPrivate();
@@ -259,6 +260,7 @@ public class Main
 		System.out.println("x: " + x);
 		System.out.println("y: " + y);
 		System.out.println("a: " + a);
+		System.out.println("N: " + pk.getN());
 		x = PaillierCipher.encrypt(x, pk);
 		y = PaillierCipher.encrypt(y, pk);
 		
@@ -334,6 +336,7 @@ public class Main
 		System.out.println("x: " + x);
 		System.out.println("y: " + y);
 		System.out.println("a: " + a);
+		System.out.println("u: " + pubKey.getU());
 		x = DGKOperations.encrypt(pubKey, x);
 		y = DGKOperations.encrypt(pubKey, y);
 		
@@ -453,6 +456,7 @@ public class Main
 		System.out.println("x : " + _x);
 		System.out.println("y : " + _y);
 		System.out.println("a : " + a);
+		System.out.println("u : " + CipherConstants.FIELD_SIZE);
 		ElGamal_Ciphertext x = ElGamalCipher.encrypt(e_pk, _x);
 		ElGamal_Ciphertext y = ElGamalCipher.encrypt(e_pk, _y);
 		
