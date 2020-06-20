@@ -3,14 +3,15 @@ This is a module for easy implementation of the following partially Homomorphic 
 - ElGamal
 - Paillier
 - DGK
+- Goldwasser-Micali
 
 ----Requirements-----
 JRE 1.8
-
-This can be used in Android Projects as well!
+As this uses Java 8, this code can be imported/used by Android Phones as well!
 
 -------Papers------------
-See the Repository, all papers are here. Functionalities will have the functions and corresponding paper.
+Check the Papers folder for research papers from which this library implemented the repository.
+Functionalities will have the functions and corresponding paper.
 
 -------How to export to JAR file to use in other projects------
 
@@ -21,7 +22,7 @@ See the Repository, all papers are here. Functionalities will have the functions
 5- Be sure to NOT select the default package as that only contains test cases as an example for you to use!
 6- Be sure to select to export only generated class files/resources. The source code is here in this repository anyways!
 7- Select the path of where JAR file will be exported.
-8- SEE AndrewQuijano/SSTREU2017 repository, which shows it uses the jar file from this repository.
+8- View https://github.com/AndrewQuijano/SSTREU2017 repository, which shows it uses the jar file from this repository.
 
 ----------FUNCTIONALITIES----------------
 
@@ -30,7 +31,7 @@ Operations supported for all partially homomorphic systems:
 2- Subtraction
 3- Multiplication (See alice/bob and Mau paper)
 4- Division (See Divison.pdf paper) ****THERE IS A FAST AND LESS ACCURATE AND A SLOW BUT ACCURATE DIVISION **** SEE PAPER/CODE CAREFULLY!
-5- Signature (DGK isn't exactly verified but technically works, El-Gamal is in progress)
+5- Signature (DGK isn't exactly verified but technically works)
 6- Comparison Protocols (See Comparison.pdf, there is a typo and it is verified by Veugen, see below)
 For comparison protocols, the code follows the same logic that Bob has the private key and Alice doesn't.
 Please note: The comparison protocols work regardless of whether it is Paillier, DGK or ElGamal, just minor modifications are needed.
@@ -51,15 +52,14 @@ Alternatively you can check the following project:
 https://github.com/AndrewQuijano/SSTREU2017
 
 -----------Precautions---------------
-If you are hanging when using methods from this library, you probably have a mis-match in functions being used.
+If your code is using the driver and is froezen when using methods from this library on run-time, 
+you probably have a mis-match in functions being used.
 For example, Alice is using Protocol 2 and Bob is using Protocol 4.
+If you catch an Optional Data Exception, this is also symptom that alice/bob have a mismatched method e. g. alice trying to use Protocol 4 and bob trying to use multiplication.
 
-ALSO, WHEN USING THIS LIBRARY FOR REAL, BE CAREFUL TO MAKE SURE YOU ARE NOT CALLING 
-THE FUNCTIONS TO SEND ALICE THE PRIVATE KEYS.
-THOSE ARE TO TEST THE CODE WORKED AS EXPECTED! 
-
-IN REAL LIFE: FOR ALICE ONLY HAVE THE SOCKET AS YOUR INPUT AND FOR BOB, YOUR LAST ARGUMENT MUST NOT BE A BOOLEAN!
-I WILL ASSUME YOU ARE SMART ENOUGH TO EITHER DELETE THIS FUNCTION BEFORE USAGE OR WHATEVER.
+NOTE: If you want to use this code for an application PLEASE USE MASTER Branch.
+The video has used code on development branch to demonstrated it worked!
+The Master branch DOES NOT have the code of Alice receiving the private key for debugging/verification.
 
 ---------------------How to use Test Driver and follow example on PPT------------------------------------
 As seen from the video, the Windows 10 was the Host OS and assumed the role of Bob.
@@ -69,7 +69,5 @@ The Ubuntu VM was alice as I placed a command line argument.
 As of 2/17/2020 11:31 PM EST, this should work perfectly. 
 
 ----------TO DO----------------------
-1- Currently I hope to use the Bouncy castle API to generate certificates from these. I do intend to donate the code to bouncy castle in due time as well.
-2- Finish ElGamal signature testing
+1- Currently I hope to use the Bouncy castle API to generate certificates from these.
 3- Start C++ creation, but NTL installation needs to be completing
-
