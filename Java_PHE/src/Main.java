@@ -166,7 +166,10 @@ public class Main
 				andrew.run();// Sort Paillier
 				andrew.setDGKMode(true);
 				andrew.run();// Sort DGK
-				andrew.repeat_ElGamal_Protocol4();
+				if(e_pk.ADDITIVE)
+				{
+					andrew.repeat_ElGamal_Protocol4();
+				}
 			}
 		}
 		catch (IOException | ClassNotFoundException x)
@@ -235,7 +238,10 @@ public class Main
 			toSort[i] = NTL.generateXBitRandom(9);
 			t.add(ElGamalCipher.encrypt(e_pk, toSort[i]));
 		}
-		Niu.getKMin_ElGamal(t, 3);
+		if(e_pk.ADDITIVE)
+		{
+			Niu.getKMin_ElGamal(t, 3);
+		}
 	}
 	
 	// ------------------------------------ Stress Test Protocol 1 - 4 DGK and Paillier-----------------------------------
@@ -564,6 +570,7 @@ public class Main
 	{
 		if(!e_pk.ADDITIVE)
 		{
+			System.out.println("ElGamal Secure Addition/Subtraction");
 			// Addition
 			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
 			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("400")));
@@ -574,6 +581,7 @@ public class Main
 			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
 			return;
 		}
+		System.out.println("Multiplication Tests...ElGamal");
 		// Check the multiplication, ElGamal
 		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), 
 				ElGamalCipher.encrypt(e_pk, new BigInteger("2")));
