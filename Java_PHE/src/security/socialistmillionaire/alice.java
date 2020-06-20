@@ -720,12 +720,12 @@ public final class alice extends socialist_millionaires implements Runnable
 
 		// Step H: See Optimization 2
 		C = new BigInteger[beta_bits.length + 1];
-		int alpha_bit;
-		int alpha_hat_bit;
+		//int alpha_bit;
+		//int alpha_hat_bit;
 		for (int i = 0; i < beta_bits.length;i++)
 		{
-			alpha_bit = alpha.testBit(i)  ? 1 : 0;;
-			alpha_hat_bit = alpha_hat.testBit(i) ? 1 : 0;;
+			//alpha_bit = alpha.testBit(i)  ? 1 : 0;;
+			//alpha_hat_bit = alpha_hat.testBit(i) ? 1 : 0;;
 			if(deltaA != NTL.bit(alpha, i) && deltaA != NTL.bit(alpha_hat, i))
 			{
 				C[i] = pubKey.ONE();
