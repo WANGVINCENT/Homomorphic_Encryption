@@ -94,6 +94,9 @@ public class Main
 				pubKey = Niu.getDGKPublicKey();
 				e_pk = Niu.getElGamalPublicKey();
 				
+				// Test K-min
+				k_min();
+				
 				// Test Protocol 1 - 4 Functionality
 				alice_demo();
 				alice_ElGamal();
@@ -104,8 +107,6 @@ public class Main
 				Niu.setDGKMode(true);
 				alice_DGK_Veugen();
 				alice_ElGamal_Veugen();
-				
-				k_min();
 			}
 			else
 			{
@@ -150,17 +151,6 @@ public class Main
 				bob_client = bob_socket.accept();
 				andrew = new bob(bob_client, pe, DGK, el_gamal, true);
 				
-				// Show Protocol 1 - 4 functionality
-				bob_demo();
-				bob_ElGamal();
-				
-				// Stress Test the Protocols (get time to compute)
-				andrew.setDGKMode(false);
-				bob_Veugen(); //Paillier
-				andrew.setDGKMode(true);
-				bob_Veugen(); //DGK
-				bob_ElGamal_Veugen();
-				
 				// Test K-Min using Protocol 4
 				andrew.setDGKMode(false);
 				andrew.run();// Sort Paillier
@@ -170,6 +160,17 @@ public class Main
 				{
 					andrew.repeat_ElGamal_Protocol4();
 				}
+				
+				// Test Protocol 1 - 4 functionality
+				bob_demo();
+				bob_ElGamal();
+				
+				// Stress Test the Protocols (get time to compute)
+				andrew.setDGKMode(false);
+				bob_Veugen(); //Paillier
+				andrew.setDGKMode(true);
+				bob_Veugen(); //DGK
+				bob_ElGamal_Veugen();
 			}
 		}
 		catch (IOException | ClassNotFoundException x)
