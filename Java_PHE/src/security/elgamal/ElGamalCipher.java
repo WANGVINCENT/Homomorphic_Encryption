@@ -451,10 +451,13 @@ public class ElGamalCipher extends CipherSpi
 		if (m != null)
 		{
 			// If I get this, there is a chance I might have a negative number to make?
-			if (m.compareTo(CipherConstants.FIELD_SIZE) == 1)
+			if(m.compareTo(key.p.subtract(BigInteger.ONE)) >= 0)
 			{
-				//m = m.mod(CipherConstants.FIELD_SIZE);
 				m = m.mod(key.p.subtract(BigInteger.ONE));
+				if (m.compareTo(CipherConstants.FIELD_SIZE) == 1)
+				{
+					m = m.mod(CipherConstants.FIELD_SIZE);	
+				}
 			}
 			return m;
 		}
