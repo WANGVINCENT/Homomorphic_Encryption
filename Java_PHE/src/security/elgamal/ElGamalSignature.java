@@ -1,6 +1,7 @@
 package security.elgamal;
 
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
 import java.security.MessageDigest;
@@ -9,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
 import security.generic.CipherConstants;
@@ -20,7 +22,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	private ElGamalPublicKey pk;
 	private boolean VERIFY_MODE;
 	private byte [] encoded_hash;
-	
+
 	protected void engineInitVerify(PublicKey publicKey) 
 			throws InvalidKeyException 
 	{
@@ -68,7 +70,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		}
 		this.encoded_hash = digest.digest(b);
 	}
-	
+
 	// https://en.wikipedia.org/wiki/ElGamal_signature_scheme
 	protected byte[] engineSign()
 			throws SignatureException 
@@ -112,8 +114,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 			{
 				r = new BigInteger(Arrays.copyOfRange(sigBytes, 0, 129));
 				s = new BigInteger(Arrays.copyOfRange(sigBytes, 129, sigBytes.length));
-			}
-			
+			}	
 			// arg1 = message, arg2 & arg3 = signed hash
 			return verify(new BigInteger(encoded_hash), new ElGamal_Ciphertext(r, s), pk);			
 		}
@@ -123,18 +124,18 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		}
 	}
 
-	protected void engineSetParameter(String param, Object value) 
+	protected void engineSetParameter(AlgorithmParameterSpec param) 
 			throws InvalidParameterException 
 	{
 
 	}
 
-	protected Object engineGetParameter(String param) 
+	protected AlgorithmParameters engineGetParameter() 
 			throws InvalidParameterException
 	{
 		return null;
 	}
-	
+
 	public ElGamal_Ciphertext sign(BigInteger M)
 	{
 		BigInteger p1 = sk.p.subtract(BigInteger.ONE);
@@ -154,35 +155,37 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 			}
 		}
 		BigInteger r = this.sk.g.modPow(K, sk.p);
-	    BigInteger s = M.subtract(sk.x.multiply(r)).multiply(K.modInverse(p1)).mod(p1);
-	    return new ElGamal_Ciphertext(r, s);
+		BigInteger s = M.subtract(sk.x.multiply(r)).multiply(K.modInverse(p1)).mod(p1);
+		return new ElGamal_Ciphertext(r, s);
 	}
-	
+
 	// https://en.wikipedia.org/wiki/ElGamal_signature_scheme
-    public boolean verify(BigInteger M, ElGamal_Ciphertext sig, ElGamalPublicKey pk)
-    {
-    	BigInteger r = sig.getA();
-    	BigInteger s = sig.getB();
-    	BigInteger check = null;
-    	
-        if (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(pk.p.subtract(BigInteger.ONE)) == 1)
-        {
-        	throw new IllegalArgumentException("Invalid r!");
-        }
-        if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(TWO)) == 1)
-        {
-        	throw new IllegalArgumentException("Invalid s!");
-        }
-        // h = y = g^x
-        check = pk.h.modPow(r, pk.p);
-        check = check.multiply(r.modPow(s, pk.p)).mod(pk.p);
-        if (check.compareTo(pk.g.modPow(M, pk.p)) == 0)
-        {
-        	return true;
-        }
-        return false;
-    }
-    
+	public boolean verify(BigInteger M, ElGamal_Ciphertext sig, ElGamalPublicKey pk)
+	{
+		BigInteger r = sig.getA();
+		BigInteger s = sig.getB();
+		BigInteger check = null;
+
+		if (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(pk.p.subtract(BigInteger.ONE)) == 1)
+		{
+			System.err.println("r: " + r + " and " + pk.p.subtract(BigInteger.ONE));
+			return false;
+		}
+		if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(TWO)) == 1)
+		{
+			System.err.println("s: " + s + " and " + pk.p.subtract(TWO));
+			return false;
+		}
+		// h = y = g^x
+		check = pk.h.modPow(r, pk.p);
+		check = check.multiply(r.modPow(s, pk.p)).mod(pk.p);
+		if (check.compareTo(pk.g.modPow(M, pk.p)) == 0)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	// PUBLIC FACING FUNCTIONS
 	public void initSign(ElGamalPrivateKey sk) throws InvalidKeyException
 	{
@@ -207,5 +210,18 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	public boolean verify(byte [] signature) throws SignatureException
 	{
 		return engineVerify(signature);
+	}
+
+	// Should delete
+	protected void engineSetParameter(String param, Object value)
+			throws InvalidParameterException 
+	{
+		
+	}
+
+	protected Object engineGetParameter(String param) 
+			throws InvalidParameterException 
+	{
+		return null;
 	}
 }

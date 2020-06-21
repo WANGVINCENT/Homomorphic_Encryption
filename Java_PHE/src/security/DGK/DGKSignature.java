@@ -1,6 +1,7 @@
 package security.DGK;
 
 import java.math.BigInteger;
+import java.security.AlgorithmParameters;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
 import java.security.MessageDigest;
@@ -9,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
+import java.security.spec.AlgorithmParameterSpec;
 
 public class DGKSignature extends SignatureSpi
 {
@@ -83,6 +85,18 @@ public class DGKSignature extends SignatureSpi
 	{
 		return verify(new BigInteger(encoded_hash), new BigInteger(sigBytes), pk);
 	}
+	
+	protected void engineSetParameter(AlgorithmParameterSpec param) 
+			throws InvalidParameterException 
+	{
+
+	}
+
+	protected AlgorithmParameters engineGetParameter() 
+			throws InvalidParameterException
+	{
+		return null;
+	}
 
 	protected void engineSetParameter(String param, Object value) 
 			throws InvalidParameterException 
@@ -126,17 +140,9 @@ public class DGKSignature extends SignatureSpi
 	public static BigInteger sign(BigInteger message, DGKPrivateKey privKey)
 			throws IllegalArgumentException
 	{
-		// To avoid attacks, You need (message, v) = 1
 		BigInteger signature = null;
-		/*
-		if(!message.gcd(privKey.v).equals(BigInteger.ONE))
-		{
-			throw new IllegalArgumentException("ARE YOU TRYING TO LEAK YOUR PRIVATE KEY?");
-		}
-		*/
-		// g^{v}h^{m} (mod n) 
+		// g^{v} * {m} (mod n) 
 		signature = privKey.g.modPow(privKey.v, privKey.n);
-		//signature = signature.multiply(privKey.h.modPow(message, privKey.n)).mod(privKey.n);
 		signature = signature.multiply(message).mod(privKey.n);
 		return signature;
 	}
@@ -144,8 +150,7 @@ public class DGKSignature extends SignatureSpi
 	public static boolean verify(BigInteger message, BigInteger certificate, DGKPublicKey pubKey)
 	{
 		BigInteger challenge = certificate.modPow(pubKey.bigU, pubKey.n);
-		// g^{v}h^{m} (mod n) --> g^{v * u} h^{m * u} (mod n) --> h^{m * u} (mod n)
-		//if (pubKey.h.modPow(message.multiply(pubKey.bigU), pubKey.n).compareTo(challenge) == 0)
+		// g^{v} * {m} (mod n) --> g^{v * u} * { m } (mod n) --> m^{u} (mod n)
 		if (message.modPow(pubKey.bigU, pubKey.n).compareTo(challenge) == 0)
 		{
 			return true;

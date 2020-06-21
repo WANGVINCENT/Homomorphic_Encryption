@@ -75,22 +75,6 @@ public final class PaillierPrivateKey implements Serializable, PaillierKey, Priv
 		aOutputStream.defaultWriteObject();
 	}
 
-	public boolean equals(Object o)
-	{
-		if (!(o instanceof PaillierPrivateKey))
-		{
-			return false;
-		}
-
-		if (o == this)
-		{
-			return true;
-		}
-		PaillierPrivateKey key = (PaillierPrivateKey) o;
-		return n.equals(key.n) && modulus.equals(key.modulus) 
-				&& lambda.equals(key.lambda) && mu.equals(key.mu);
-	}
-
 	// Omitting secret key parameters
 	public String toString()
 	{

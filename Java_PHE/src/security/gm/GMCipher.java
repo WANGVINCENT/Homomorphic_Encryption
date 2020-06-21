@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import security.generic.CipherConstants;
@@ -36,7 +37,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final void engineSetMode(String mode)
 			throws NoSuchAlgorithmException 
 	{
-		throw new NoSuchAlgorithmException("Paillier supports no modes.");
+		throw new NoSuchAlgorithmException("Goldwasser-Micali supports no modes.");
 	}
 
 	/**
@@ -46,7 +47,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final void engineSetPadding(String padding)
 			throws NoSuchPaddingException 
 	{
-		throw new NoSuchPaddingException("Paillier supports no padding.");
+		throw new NoSuchPaddingException("Goldwasser-Micali supports no padding.");
 	}
 
 	/**
@@ -101,8 +102,6 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	protected final int decrypt(byte[] input, int inputOffset, int inputLenth,
 			byte[] output, int outputOffset)
 	{
-		GMPrivateKey key = (GMPrivateKey) keyGM;
-
 		// extract c
 		byte[] cBytes = new byte[input.length];
 		System.arraycopy(input, inputOffset, cBytes, 0, input.length);
@@ -117,14 +116,14 @@ public class GMCipher extends CipherSpi implements CipherConstants
 			BigInteger b = new BigInteger(c_i);
 			c.add(b);
 		}
-		byte [] messageBytes = decrypt(c, key).toByteArray();
+		byte [] messageBytes = decrypt(c, (GMPrivateKey) keyGM).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
 		return plaintextSize;
 	}
 
 	/**
-	 * PaillierHomomorphicCipher doesn't recognise any algorithm - specific initialisations
+	 * GM HomomorphicCipher doesn't recognise any algorithm - specific initialisations
 	 * so the algorithm specific engineInit() just calls the previous overloaded
 	 * version of engineInit()
 	 * 
@@ -265,7 +264,7 @@ public class GMCipher extends CipherSpi implements CipherConstants
 			try 
 			{
 				return encrypt(input, inputOffset, inputLen, output, outputOffset);	
-			} 
+			}
 			catch (Exception e) 
 			{
 				e.printStackTrace();
@@ -400,43 +399,53 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	public static List<BigInteger> encrypt(BigInteger m, GMPublicKey pk)
 	{
 		List<BigInteger> enc_bits = new ArrayList<BigInteger>();  
-	    char [] bit_array = m.toString(2).toCharArray();
-	    BigInteger x = null;
-	    // Encrypt bits
-	    for(char bit : bit_array)
-	    {
-	    	x = NTL.RandomBnd(pk.n);
-	        if (bit == '1')
-	        {
-	        	enc_bits.add(pk.y.multiply(x.modPow(TWO, pk.n)).mod(pk.n));
-	        }
-	        else
-	        {
-	        	enc_bits.add(x.modPow(TWO, pk.n));
-	        }
-	    }
-	    return enc_bits;
-	}
-	
-	public static BigInteger decrypt(List<BigInteger> cipher, GMPrivateKey sk)
-	{
-		BigInteger e = null;
-		String bits = "";
-		for (BigInteger enc_bit: cipher)
+		BigInteger x = null;
+		for(int i = m.bitLength() - 1; i >= 0 ; i--)
 		{
-			e = NTL.jacobi(enc_bit, sk.p);
-			if (e.equals(BigInteger.ONE))
+			x = NTL.RandomBnd(pk.n);
+			if(m.testBit(i))
 			{
-				bits += "0";
+				enc_bits.add(pk.y.multiply(x.modPow(TWO, pk.n)).mod(pk.n));
 			}
 			else
 			{
-				bits += "1";
+				enc_bits.add(x.modPow(TWO, pk.n));
 			}
 		}
-	    return new BigInteger(bits, 2);
+		Collections.reverse(enc_bits);
+		return enc_bits;
 	}
-	
+
+	public static BigInteger decrypt(List<BigInteger> cipher, GMPrivateKey sk)
+	{
+		BigInteger e = BigInteger.ZERO;
+		BigInteger m = BigInteger.ZERO;
+		for (int i = cipher.size() - 1; i >= 0 ; i--)
+		{
+			e = NTL.jacobi(cipher.get(i), sk.p);
+			if (e.equals(NEG_ONE))
+			{
+				m = m.setBit(i);
+			}
+		}
+		return m;
+	}
+
+	public static BigInteger decrypt(BigInteger [] cipher, GMPrivateKey sk)
+	{
+		BigInteger e = BigInteger.ZERO;
+		BigInteger m = BigInteger.ZERO;
+		for (int i = cipher.length - 1; i >= 0 ; i--)
+		{
+			e = NTL.jacobi(cipher[i], sk.p);
+			if (e.equals(NEG_ONE))
+			{
+				m = m.setBit(i);
+			}
+		}
+		return m;
+	}
+
 	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
 	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk) throws IllegalArgumentException
 	{
@@ -445,9 +454,24 @@ public class GMCipher extends CipherSpi implements CipherConstants
 			throw new IllegalArgumentException("Unequal Size of Ciphertext for XOR!");
 		}
 		BigInteger [] xor_solution = new BigInteger[cipher_1.length];
-		for (int i = 0; i < cipher_1.length; i++)
+		for (int i = cipher_1.length - 1; i >= 0 ; i--)
 		{
 			xor_solution[i] = cipher_1[i].multiply(cipher_2[i]).mod(pk.n);
+		}
+		return xor_solution;
+	}
+
+	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
+	public static BigInteger[] xor(List<BigInteger> cipher_1, List<BigInteger> cipher_2, GMPublicKey pk) throws IllegalArgumentException
+	{
+		if(cipher_1.size() != cipher_2.size())
+		{
+			throw new IllegalArgumentException("Unequal Size of Ciphertext for XOR!");
+		}
+		BigInteger [] xor_solution = new BigInteger[cipher_1.size()];
+		for (int i = cipher_1.size() - 1; i >= 0 ; i--)
+		{
+			xor_solution[i] = cipher_1.get(i).multiply(cipher_2.get(i)).mod(pk.n);
 		}
 		return xor_solution;
 	}

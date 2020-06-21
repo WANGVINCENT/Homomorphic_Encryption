@@ -357,7 +357,7 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 		System.out.println("FINISHED WITH DGK KEY GENERATION in " + (System.nanoTime() - start_time)/BILLION + " seconds!");
 		return new KeyPair(pubKey, privkey);
 	}
-
+	
 	public String toString()
 	{
 		String s = "";

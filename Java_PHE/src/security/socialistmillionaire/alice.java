@@ -23,22 +23,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-/*
-Credits to Andrew Quijano and Dr. Samet Tonyali
-Terms of Use:
-Feel free to use this code as you like.
-DGK was created in 2007 by:
-Ivan Damgard, Martin Geisler, and Mikkel Kroigaard (DGK).
-Title of Papers: (Source of Protocol 1, Protocol 2)
-Efficient and Secure Comparison for On-Line auctions (2007)
-A correction to Efficient and Secure Comparison for Online auctions (2009)
-Protocol 3 and Protocol 4 was created referencing Thjis Veugen's Paper:
-Improving the DGK Comparison Protocol (2012)
-*/
-
 enum Algorithm
 {
-    INSERT_SORT, MERGE_SORT, QUICK_SORT, BUBBLE_SORT;
+	INSERT_SORT, MERGE_SORT, QUICK_SORT, BUBBLE_SORT;
 }
 
 public final class alice extends socialist_millionaires implements Runnable
@@ -48,20 +35,14 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger min;
 		BigInteger max;
 	}
-	
 	// Needed for comparison
 	private BigInteger [] toSort = null;
 	private BigInteger [] sortedArray = null;
-	// Temporary for Merge Sort
-    private BigInteger [] tempBigMerg = null;
-    
-	//I/O
-	private ObjectOutputStream toBob = null;
-	private ObjectInputStream fromBob = null;
-	
+	private BigInteger [] tempBigMerg = null;
+
 	// Current Algorithm to Sort with
 	private Algorithm algo;
-    
+
 	public alice (Socket clientSocket) throws IOException, ClassNotFoundException
 	{
 		if(clientSocket != null)
@@ -73,23 +54,23 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			throw new NullPointerException("Client Socket is null!");
 		}
-		isDGK = false;
+		this.isDGK = false;
 		this.algo = Algorithm.BUBBLE_SORT;
-		
+
 		this.receivePublicKeys();
-		powL = TWO.pow(pubKey.getL());
+		this.powL = TWO.pow(pubKey.getL());
 	}
-	
+
 	public void setSorting(List<BigInteger> toSort)
 	{
 		this.toSort = toSort.toArray(new BigInteger[toSort.size()]);
 	}
-	
+
 	public void setSorting(BigInteger [] toSort)
 	{
 		this.toSort = toSort;
 	}
-	
+
 	public BigInteger [] getSortedArray()
 	{
 		return sortedArray;
@@ -103,7 +84,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Constraint violated: 0 <= x, y < 2^l, x is: " + x.bitLength() + " bits");
 		}
-		
+
 		int answer = -1;
 		int deltaB = -1;
 		int deltaA = rnd.nextInt(2);
@@ -111,8 +92,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger [] Encrypted_Y = null;
 		BigInteger [] C = null;
 		BigInteger [] XOR = null;
-		//BigInteger s = null;
-		
+
 		// Step 1: Get Y bits from Bob
 		in = fromBob.readObject();
 		if (in instanceof BigInteger[])
@@ -142,35 +122,48 @@ public final class alice extends socialist_millionaires implements Runnable
 		XOR = new BigInteger[Encrypted_Y.length];
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
-			//Enc[x XOR y] = [y_i]
-			if (NTL.bit(x, i) == 0)
+			if (NTL.bit(x, i) == 1)
+			{
+				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);	
+			}
+			else
 			{
 				XOR[i] = Encrypted_Y[i];
 			}
-			//Enc[x XOR y] = [1] - [y_i]
-			else
+			/*
+			if(x.testBit(i))
 			{
 				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
 			}
+			else
+			{
+				XOR[i] = Encrypted_Y[i];	
+			}
+			*/
 		}
-	
-		// Step 3: Alice picks deltaA and computes S
-		//s = DGKOperations.encrypt(pubKey, 1 - 2 * deltaA);
-		
+
+		// Step 3: Alice picks deltaA and computes s 
+
 		// Step 4: Compute C_i
 		C = new BigInteger[Encrypted_Y.length + 1];
-		
+
 		// Compute the Product of XOR, add s and compute x - y
 		// C_i = sum(XOR) + s + x_i - y_i
-		
+
 		for (int i = 0; i < Encrypted_Y.length;i++)
 		{
 			C[i] = DGKOperations.multiply(pubKey, DGKOperations.sum(pubKey, XOR, i), 3);
 			C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1 - 2 * deltaA);
-			C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(x, i));
 			C[i] = DGKOperations.subtract(pubKey, C[i], Encrypted_Y[i]);
+			C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(x, i));
+			/*
+			if(x.testBit(i))
+			{
+				C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1);
+			}
+			*/
 		}
-		
+
 		//This is c_{-1}
 		C[Encrypted_Y.length] = DGKOperations.sum(pubKey, XOR);
 		C[Encrypted_Y.length] = DGKOperations.add_plaintext(pubKey, C[Encrypted_Y.length], deltaA);
@@ -183,12 +176,12 @@ public final class alice extends socialist_millionaires implements Runnable
 		C = shuffle_bits(C);
 		toBob.writeObject(C);
 		toBob.flush();
-		
+
 		// Step 6: Bob looks for any 0's in C_i and computes DeltaB
-		
+
 		// Step 7: Obtain Delta B from Bob
 		deltaB = fromBob.readInt();
-		
+
 		// 1 XOR 1 = 0 and 0 XOR 0 = 0, so X > Y
 		if (deltaA == deltaB)
 		{
@@ -209,7 +202,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		toBob.flush();
 		return answer == 1;
 	}
-	
+
 	public boolean Protocol2(BigInteger x, BigInteger y) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
@@ -224,7 +217,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger result = null;
 		BigInteger r = null;
 		BigInteger alpha = null;
-		
+
 		// Step 1: 0 <= r < N
 		// Pick Number of l + 1 + sigma bits
 		// Considering DGK is an option, just stick with size of Zu		
@@ -244,7 +237,7 @@ public final class alice extends socialist_millionaires implements Runnable
 				throw new IllegalArgumentException("Invalid due to constraint: l + sigma + 2 < log_2(N)!");
 			}
 		}
-		
+
 		/*
 		 * Step 2: Alice computes [[z]] = [[x - y + 2^l + r]]
 		 * Send Z to Bob
@@ -255,35 +248,35 @@ public final class alice extends socialist_millionaires implements Runnable
 		z = PaillierCipher.subtract(z, y, pk);
 		toBob.writeObject(z);
 		toBob.flush();
-		
+
 		// Step 2: Bob decrypts[[z]] and computes beta = z (mod 2^l)
 
 		// Step 3: alpha = r (mod 2^l)
 		alpha = NTL.POSMOD(r, powL);
 
 		// Step 4: Complete Protocol 1 or Protocol 3
-    	boolean P3 = Protocol3(alpha, deltaA);
-    	if(P3)
-    	{
-    		x_leq_y = 1;
-    	}
-    	else
-    	{
-    		x_leq_y = 0;
-    	}
-    	
-    	// Step 5A: get Delta B
-    	
-    	
+		boolean P3 = Protocol3(alpha, deltaA);
+		if(P3)
+		{
+			x_leq_y = 1;
+		}
+		else
+		{
+			x_leq_y = 0;
+		}
+
+		// Step 5A: get Delta B
+
+
 		// Step 5A: get Delta B 
-    	if(deltaA == x_leq_y)
-        {
-            deltaB = 0;
-        }
-        else
-        {
-            deltaB = 1;
-        }
+		if(deltaA == x_leq_y)
+		{
+			deltaB = 0;
+		}
+		else
+		{
+			deltaB = 1;
+		}
 
 		// Step 5B: Bob sends z/2^l 
 		bob = fromBob.readObject();
@@ -296,20 +289,20 @@ public final class alice extends socialist_millionaires implements Runnable
 			throw new IllegalArgumentException("Protocol 2, Step 5: z/2^l not found!");
 		}
 
-  		// Step 6: Get [[beta < alpha]]
-        if(deltaA == 1)
-        {
-        	alpha_lt_beta = PaillierCipher.encrypt(deltaB, pk);
-        }
-        else
-        {
-        	alpha_lt_beta = PaillierCipher.encrypt(1 - deltaB, pk);
-        }
-        
+		// Step 6: Get [[beta < alpha]]
+		if(deltaA == 1)
+		{
+			alpha_lt_beta = PaillierCipher.encrypt(deltaB, pk);
+		}
+		else
+		{
+			alpha_lt_beta = PaillierCipher.encrypt(1 - deltaB, pk);
+		}
+
 		// Step 7: get [[x <= y]]
-        result = PaillierCipher.subtract(zdiv2L, PaillierCipher.encrypt(r.divide(powL), pk), pk);
-        result = PaillierCipher.subtract(result, alpha_lt_beta, pk);
-        
+		result = PaillierCipher.subtract(zdiv2L, PaillierCipher.encrypt(r.divide(powL), pk), pk);
+		result = PaillierCipher.subtract(result, alpha_lt_beta, pk);
+
 		/*
 		 * Unofficial Step 8:
 		 * Since the result is encrypted...I need to send
@@ -328,63 +321,10 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		return comparison == 1;
 	}
-	
+
 	public boolean Protocol3(BigInteger x) throws ClassNotFoundException, IOException, IllegalArgumentException
 	{
 		return Protocol3(x, rnd.nextInt(2));
-	}
-
-	public boolean Protocol3_equals(BigInteger x) throws ClassNotFoundException, IOException, IllegalArgumentException
-	{
-		if(x.bitLength() > pubKey.getL())
-		{
-			throw new IllegalArgumentException("Constraint violated: 0 <= x, y < 2^l, x is: " + x.bitLength() + " bits");
-		}
-		
-		Object in = null;
-		BigInteger [] XOR = null;
-		BigInteger [] Encrypted_Y = null;
-		//Step 1: Receive y_i bits from Bob
-		in = fromBob.readObject();
-		if (in instanceof BigInteger[])
-		{
-			Encrypted_Y = (BigInteger []) in;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Protocol 3 Equality Step 1: Missing Y-bits!");
-		}
-
-		// Case 1, delta B is ALWAYS INITIALIZED TO 0
-		// y has more bits -> y is bigger
-		if (x.bitLength() != Encrypted_Y.length)
-		{
-			toBob.writeObject(BigInteger.ZERO);
-			toBob.flush();
-			return false;
-		}
-		else
-		{
-			// Step 2: compute Encrypted X XOR Y
-			XOR = new BigInteger[Encrypted_Y.length];
-			for (int i = 0; i < Encrypted_Y.length; i++)
-			{
-				//Enc[x XOR y] = [y_i]
-				if (NTL.bit(x, i) == 0)
-				{
-					XOR[i] = Encrypted_Y[i];
-				}
-				//Enc[x XOR y] = [1] - [y_i]
-				else
-				{
-					XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
-				}
-			}
-			toBob.writeObject(XOR);
-			toBob.flush();
-			// Step 3: a XOR a = 0
-			return fromBob.readInt() == 1;
-		}
 	}
 	
 	/*
@@ -471,16 +411,24 @@ public final class alice extends socialist_millionaires implements Runnable
 		XOR = new BigInteger[Encrypted_Y.length];
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
-			//Enc[x XOR y] = [y_i]
-			if (NTL.bit(x, i) == 0)
-			{
-				XOR[i] = Encrypted_Y[i];
-			}
-			//Enc[x XOR y] = [1] - [y_i]
-			else
+			if (NTL.bit(x, i) == 1)
 			{
 				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
 			}
+			else
+			{
+				XOR[i] = Encrypted_Y[i];
+			}
+			/*
+			if(x.testBit(i))
+			{
+				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
+			}
+			else
+			{
+				XOR[i] = Encrypted_Y[i];
+			}
+			*/
 		}
 		
 		// Step 3: delta A is computed on initialization, it is 0 or 1.
@@ -515,7 +463,9 @@ public final class alice extends socialist_millionaires implements Runnable
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
 			// if i is NOT in L, just place a random NON-ZERO
-			if(NTL.bit(x, i) != deltaA)
+			//int bit = x.testBit(i) ? 1 : 0;
+			int bit = NTL.bit(x, i);
+			if(bit != deltaA)
 			{
 				C[Encrypted_Y.length - 1 - i] = DGKOperations.encrypt(pubKey, rnd.nextInt(pubKey.getL()) + 1);
 			}
@@ -674,16 +624,23 @@ public final class alice extends socialist_millionaires implements Runnable
 		encAlphaXORBeta = new BigInteger[beta_bits.length];
 		for (int i = 0; i < encAlphaXORBeta.length; i++)
 		{
-			//Enc[x XOR y] = [y_i]
-			if (NTL.bit(alpha, i) == 0)
+			if (NTL.bit(alpha, i) == 1)
+			{
+				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);
+			}
+			else
 			{
 				encAlphaXORBeta[i] = beta_bits[i];
 			}
-			//Enc[x XOR y] = [1] - [y_i]
+			/*
+			if(alpha.testBit(i))
+			{
+				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);
+			}
 			else
 			{
-				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);				
-			}
+				encAlphaXORBeta[i] = beta_bits[i];	
+			}*/
 		}
 		
 		// Step E: Compute Alpha Hat
@@ -700,6 +657,16 @@ public final class alice extends socialist_millionaires implements Runnable
 			{
 				w[i] = DGKOperations.subtract(pubKey, encAlphaXORBeta[i], d);
 			}
+			/*
+			if(alpha_hat.testBit(i) == alpha.testBit(i))
+			{
+				w[i] = encAlphaXORBeta[i];
+			}
+			else
+			{
+				w[i] = DGKOperations.subtract(pubKey, encAlphaXORBeta[i], d);	
+			}
+			*/
 		}
 		
 		// Step F: See Optimization 1
@@ -708,6 +675,12 @@ public final class alice extends socialist_millionaires implements Runnable
 			// If it is 16 or 32 bits...
 			if(pubKey.getL() % 16 == 0)
 			{
+				/*
+				if(alpha_hat.testBit(i) == alpha.testBit(i))
+				{
+					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());
+				}
+				*/
 				if(NTL.bit(alpha_hat, i) == NTL.bit(alpha, i))
 				{
 					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());	
@@ -719,6 +692,12 @@ public final class alice extends socialist_millionaires implements Runnable
 				{
 					w[i] = DGKOperations.multiply(pubKey, w[i], powL);	
 				}
+				/*
+				if(alpha_hat.testBit(i) == alpha.testBit(i))
+				{
+					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());
+				}
+				*/
 			}
 		}
 		
@@ -726,22 +705,33 @@ public final class alice extends socialist_millionaires implements Runnable
 
 		// Step H: See Optimization 2
 		C = new BigInteger[beta_bits.length + 1];
+		//int alpha_bit;
+		//int alpha_hat_bit;
 		for (int i = 0; i < beta_bits.length;i++)
 		{
+			//alpha_bit = alpha.testBit(i)  ? 1 : 0;;
+			//alpha_hat_bit = alpha_hat.testBit(i) ? 1 : 0;;
 			if(deltaA != NTL.bit(alpha, i) && deltaA != NTL.bit(alpha_hat, i))
 			{
-				// C[i] = DGKOperations.encrypt(pubKey, NTL.RandomBnd(pubKey.getU()));
-				// Blinding should take care of the rest!
 				C[i] = pubKey.ONE();
 			}
 			else
 			{
+				exponent = 0;
+				if(alpha_hat.testBit(i))
+				{
+					exponent += 1;
+				}
+				if(alpha.testBit(i))
+				{
+					exponent -= 1;
+				}
 				exponent = NTL.bit(alpha_hat, i) - NTL.bit(alpha, i);
 				C[i] = DGKOperations.multiply(pubKey, DGKOperations.sum(pubKey, w, i), 3);
 				C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1 - (2* deltaA));
-				C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(alpha, i));
 				C[i] = DGKOperations.add(pubKey, C[i], DGKOperations.multiply(pubKey, d, exponent));
 				C[i] = DGKOperations.subtract(pubKey, C[i], beta_bits[i]);
+				C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(alpha, i));
 			}
 		}
 		
@@ -1174,7 +1164,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Division: c is not found!");
+			throw new IllegalArgumentException("Division: c is not found: " + in.getClass().getName());
 		}
 		
 		// Step 5: Alice computes [x/d]
@@ -1187,6 +1177,11 @@ public final class alice extends socialist_millionaires implements Runnable
 			{
 				answer = DGKOperations.subtract(pubKey, answer, DGKOperations.encrypt(pubKey, t));
 			}
+			// Print Answer to verify
+			if(privKey != null)
+			{
+				System.out.println("answer: " + DGKOperations.decrypt(privKey, answer));	
+			}
 		}
 		else
 		{
@@ -1195,10 +1190,57 @@ public final class alice extends socialist_millionaires implements Runnable
 			{
 				answer = PaillierCipher.subtract(answer, PaillierCipher.encrypt(BigInteger.valueOf(t), pk), pk);
 			}
+			// Print Answer to verify
+			if (sk != null)
+			{
+				System.out.println("answer: " + PaillierCipher.decrypt(answer, sk));	
+			}
 		}
 		return answer;
 	}
 	
+	// What to do if you want to subtract two El-Gamal texts?
+	public ElGamal_Ciphertext addition(ElGamal_Ciphertext x, ElGamal_Ciphertext y) 
+			throws IOException, ClassNotFoundException, IllegalArgumentException
+	{
+		if(e_pk.ADDITIVE)
+		{
+			//throw new IllegalArgumentException("ElGamal is NOT additive mode");
+			return ElGamalCipher.add(x, y, e_pk);
+		}
+		Object in = null;
+		ElGamal_Ciphertext x_prime = null;
+		ElGamal_Ciphertext y_prime = null;
+		BigInteger plain_a = NTL.RandomBnd(pubKey.getU());
+		ElGamal_Ciphertext a = ElGamalCipher.encrypt(e_pk, plain_a);
+		ElGamal_Ciphertext result = null;
+
+		// Step 1
+		x_prime = ElGamalCipher.multiply(x, a, e_pk);
+		y_prime = ElGamalCipher.multiply(y, a, e_pk);
+
+		toBob.writeObject(x_prime);
+		toBob.flush();
+
+		toBob.writeObject(y_prime);
+		toBob.flush();
+
+		// Step 2
+
+		// Step 3
+		in = fromBob.readObject();
+		if (in instanceof ElGamal_Ciphertext)
+		{
+			result = (ElGamal_Ciphertext) in;
+			result = ElGamalCipher.divide(result, a ,e_pk);
+		}
+		else
+		{
+			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob: " + in.getClass().getName());
+		}
+		return result;
+	}
+
 	public BigInteger multiplication(BigInteger x, BigInteger y) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
@@ -1208,7 +1250,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger a = null;
 		BigInteger b = null;
 		BigInteger result = null;
-		
+
 		// Step 1
 		if(isDGK)
 		{
@@ -1254,7 +1296,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob");
+			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob: " + in.getClass().getName());
 		}
 		return result;
 	}
@@ -1262,6 +1304,10 @@ public final class alice extends socialist_millionaires implements Runnable
 	public ElGamal_Ciphertext division(ElGamal_Ciphertext x, long d) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
+		if(!e_pk.ADDITIVE)
+		{
+			return ElGamalCipher.divide(x, ElGamalCipher.encrypt(e_pk, BigInteger.valueOf(d)), e_pk);
+		}
 		Object in = null;
 		ElGamal_Ciphertext answer = null;
 		ElGamal_Ciphertext c = null;
@@ -1299,7 +1345,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 		else
 		{
-			throw new IllegalArgumentException("Alice: BigInteger not found! " + in.getClass());
+			throw new IllegalArgumentException("Alice: BigInteger not found! " + in.getClass().getName());
 		}
 		
 		// Step 5: Alice computes [x/d]
@@ -1310,12 +1356,22 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			answer = ElGamalCipher.subtract(answer, ElGamalCipher.encrypt(e_pk, t), e_pk);
 		}
+		
+		// Print Answer to verify
+		if (e_sk != null)
+		{
+			System.out.println("answer: " + ElGamalCipher.decrypt(e_sk, answer));	
+		}
 		return answer;
 	}
 	
 	public ElGamal_Ciphertext multiplication(ElGamal_Ciphertext x, ElGamal_Ciphertext y) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
+		if(!e_pk.ADDITIVE)
+		{
+			return ElGamalCipher.multiply(x, y, e_pk);
+		}
 		Object in = null;
 		ElGamal_Ciphertext result = null;
 		ElGamal_Ciphertext x_prime = null;
@@ -1342,17 +1398,16 @@ public final class alice extends socialist_millionaires implements Runnable
 		if (in instanceof ElGamal_Ciphertext)
 		{
 			result = (ElGamal_Ciphertext) in;
-			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply(x, b, e_pk), e_pk);
-			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply(y, a, e_pk), e_pk);
+			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply_scalar(x, b, e_pk), e_pk);
+			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply_scalar(y, a, e_pk), e_pk);
 			result = ElGamalCipher.subtract(result, ElGamalCipher.encrypt(e_pk, a.multiply(b)), e_pk);
 		}
 		else
 		{
-			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob");
+			throw new IllegalArgumentException("Didn't get [[x' * y']] from Bob: " + in.getClass().getName());
 		}
 		return result;
 	}
-
 
 	/*
 	 * Purpose of Method: 
@@ -1368,7 +1423,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	 */
 	
 	// https://www.geeksforgeeks.org/maximum-and-minimum-in-an-array/
-	// NOTE; THIS DOES NOT TURN OF BOB!!!
+	// NOTE: THIS DOES NOT TURN OFF BOB!!!
 	private Pair getMinMax(List<BigInteger> arr) 
 			throws ClassNotFoundException, IOException, IllegalArgumentException
 	{
@@ -1641,7 +1696,6 @@ public final class alice extends socialist_millionaires implements Runnable
 		if(toSort.length == 1 || toSort.length == 0)
 		{
 			sortedArray = deep_copy(toSort);
-			//sortedArray = toSort;
 			return;
 		}
 		// deep copy already taken care of
@@ -1684,26 +1738,23 @@ public final class alice extends socialist_millionaires implements Runnable
 				// Merge both dequeues!
 				for(Iterator<BigInteger> itr = maxSorted.descendingIterator();itr.hasNext();)
 				{
-					minSorted.addLast((BigInteger) itr.next());
+					minSorted.addLast(itr.next());
 				}
 				sortedArray = minSorted.toArray(new BigInteger[minSorted.size()]);
 				break;
 				
 			case MERGE_SORT:
 				sortedArray = deep_copy(toSort);
-				//sortedArray = toSort;
 				this.doMergeSort(0, sortedArray.length - 1);
 				break;
 		        
 			case QUICK_SORT:	
 				sortedArray = deep_copy(toSort);
-				//sortedArray = toSort;
 				this.sort(sortedArray, 0, sortedArray.length - 1);
 				break;
 				
 			case BUBBLE_SORT:
 				sortedArray = deep_copy(toSort);
-				//sortedArray = toSort;
 				this.bubbleSort(sortedArray);
 				break;
 			
@@ -1711,9 +1762,9 @@ public final class alice extends socialist_millionaires implements Runnable
 				System.out.println("NO SORTING ALGORITHM SELECTED!");
 				break;
 		}
-        // Time to end Bob's while loop for Protocol2()
-        toBob.writeBoolean(false);
-        toBob.flush();
+		// Time to end Bob's while loop for Protocol2()
+		toBob.writeBoolean(false);
+		toBob.flush();
 	}
 
 	public void receivePublicKeys() 
@@ -1751,23 +1802,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 	}
 	
-	// Used to shuffle the encrypted bits
-	// NOTE THIS METHOD DOES NOT ALLOCATE A NEW ARRAY!
-	// SO BE CAREFUL WITH POINTER MANAGEMENT HERE!
-	protected BigInteger [] shuffle_bits(BigInteger [] array)
-	{
-		for (int i = 0; i < array.length; i++) 
-		{
-			int randomPosition = rnd.nextInt(array.length);
-		    BigInteger temp = array[i];
-		    array[i] = array[randomPosition];
-		    array[randomPosition] = temp;
-		}
-		return array;
-	}
-
-	// Below are all supported sorting techniques!
-    
+	// Below are all supported sorting techniques!    
 	// ----------------Bubble Sort-----------------------------------
 	// ---------------We also use this to obtain K-Min/K-max items----
 	
@@ -1807,7 +1842,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	{
 		if(k > input.length || k <= 0)
 		{
-			throw new IllegalArgumentException("Invalid k value!");
+			throw new IllegalArgumentException("Invalid k value! " + k);
 		}
 		BigInteger [] arr = deep_copy(input);
 		BigInteger [] max = new BigInteger[k];
@@ -1857,13 +1892,13 @@ public final class alice extends socialist_millionaires implements Runnable
 	{
 		if(k > input.size() || k <= 0)
 		{
-			throw new IllegalArgumentException("Invalid k value!");
+			throw new IllegalArgumentException("Invalid k value! " + k);
 		}
 		// deep copy
 		List<ElGamal_Ciphertext> arr = new ArrayList<ElGamal_Ciphertext>();
 		for(ElGamal_Ciphertext p : input)
 		{
-		    arr.add(p);
+			arr.add(p);
 		}
 		
 		ElGamal_Ciphertext temp;
@@ -1904,10 +1939,9 @@ public final class alice extends socialist_millionaires implements Runnable
 	{
 		if(k > input.length || k <= 0)
 		{
-			throw new IllegalArgumentException("Invalid k value!");
+			throw new IllegalArgumentException("Invalid k value! " + k);
 		}
 		BigInteger [] arr = deep_copy(input);
-		
 		BigInteger [] min = new BigInteger[k];
 		
 		boolean activation = false;
@@ -1943,7 +1977,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			min[i] = arr[arr.length - 1 - i];
 		}
-	
+		
 		// Close Bob
 		toBob.writeBoolean(false);
 		toBob.flush();
@@ -2130,29 +2164,7 @@ public final class alice extends socialist_millionaires implements Runnable
 			++i;
 		}
 	}
-	
-	// BigIntegers are immutable, this should do the trick
-	protected BigInteger [] deep_copy(BigInteger [] input)
-	{
-		BigInteger [] copy = new BigInteger[input.length];
-		for(int i = 0; i < input.length;i++)
-		{
-			copy[i] = input[i];
-		}
-		return copy;
-	}
-	
-	public void writeObject(Object o) throws IOException
-	{
-		toBob.writeObject(o);
-		toBob.flush();
-	}
-	
-	public Object readObject() throws ClassNotFoundException, IOException
-	{
-		return fromBob.readObject();
-	}
-	
+
 	public void run() 
 	{
 		try
