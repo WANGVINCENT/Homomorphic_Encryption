@@ -910,7 +910,6 @@ public class Main
 		return test_set;
 	}
 	
-	
 	public static BigInteger[] generate_mid()
 	{
 		BigInteger [] test_set = new BigInteger[16];
@@ -939,7 +938,6 @@ public class Main
 		}
 		return test_set;
 	}
-	
 	
 	public static BigInteger[] generate_high()
 	{

@@ -61,13 +61,13 @@ NOTE: If you want to use this code for an application PLEASE USE MASTER Branch.
 The video has used code on development branch to demonstrated it worked!
 The Master branch DOES NOT have the code of Alice receiving the private key for debugging/verification.
 
----------------------How to use Test Driver and follow example on PPT------------------------------------
-As seen from the video, the Windows 10 was the Host OS and assumed the role of Bob.
-Bob was executed on Windows 10 Eclipse environment where no arguments were given.
+---------------------How to use Test Driver unzip example.mp4------------------------------------
+The putty terminal is connected to Bob.
+The git bash is on Alice.
+You verify the code functionality in the video. 
 
-The Ubuntu VM was alice as I placed a command line argument.
-As of 2/17/2020 11:31 PM EST, this should work perfectly. 
+The test driver shows Protocol 1 - 4 works as the expected answer "true" shows up.
 
 ----------TO DO----------------------
-1- Currently I hope to use the Bouncy castle API to generate certificates from these.
+1- Use the Bouncy castle API to generate certificates from these.
 3- Start C++ creation, but NTL installation needs to be completing
