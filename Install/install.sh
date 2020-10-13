@@ -13,7 +13,7 @@ make check
 sudo make install
 
 # Return to Desktop
-cd ~/Desktop
+cd ..
 
 # unpack and install NTL
 gunzip ntl-11.4.3.tar.gz
@@ -23,3 +23,7 @@ cd ntl-11.4.3/src
 make
 make check
 sudo make install
+
+# Remove the unzipped directories
+rm -rf gmp-6.1.2/
+rm -rf ntl-11.4.3/
