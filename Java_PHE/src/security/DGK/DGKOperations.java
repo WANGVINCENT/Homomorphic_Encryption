@@ -402,10 +402,10 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 			//first part = g^m (mod n)
 			pubKey.gLUT.put(plaintext, pubKey.g.modPow(BigInteger.valueOf(plaintext), pubKey.n));
 		}
-
+		
 		// Generate 2 * t bit random number
 		BigInteger r = NTL.generateXBitRandom(2 * pubKey.t);
-
+		
 		// First part = g^m
 		BigInteger firstpart = pubKey.gLUT.get(plaintext);
 		BigInteger secondpart = pubKey.h.modPow(r, pubKey.n);
