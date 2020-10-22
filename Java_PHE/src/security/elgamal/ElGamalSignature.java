@@ -13,8 +13,8 @@ import java.security.SignatureSpi;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.NTL;
 
 public class ElGamalSignature extends SignatureSpi implements CipherConstants
 {
@@ -135,7 +135,13 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	{
 		return null;
 	}
-
+	
+	/**
+	 * Sign a message with ElGamal Private Key
+	 * https://en.wikipedia.org/wiki/ElGamal_signature_scheme
+	 * @param M - plaintext message
+	 * @return - signed message
+	 */
 	public ElGamal_Ciphertext sign(BigInteger M)
 	{
 		BigInteger p1 = sk.p.subtract(BigInteger.ONE);
@@ -158,8 +164,15 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		BigInteger s = M.subtract(sk.x.multiply(r)).multiply(K.modInverse(p1)).mod(p1);
 		return new ElGamal_Ciphertext(r, s);
 	}
-
-	// https://en.wikipedia.org/wiki/ElGamal_signature_scheme
+	
+	/**
+	 * Verify a message with ElGamal Private Key
+	 * https://en.wikipedia.org/wiki/ElGamal_signature_scheme
+	 * @param M - plaintext message
+	 * @param sig - signed message to verify
+	 * @param pk - Used to verify signed message integrity
+	 * @return - true - is valid, false - not valid
+	 */
 	public boolean verify(BigInteger M, ElGamal_Ciphertext sig, ElGamalPublicKey pk)
 	{
 		BigInteger r = sig.getA();
@@ -211,8 +224,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	{
 		return engineVerify(signature);
 	}
-
-	// Should delete
+	
 	protected void engineSetParameter(String param, Object value)
 			throws InvalidParameterException 
 	{

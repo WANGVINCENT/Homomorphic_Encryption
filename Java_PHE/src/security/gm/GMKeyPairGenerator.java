@@ -5,8 +5,8 @@ import java.security.KeyPair;
 import java.security.KeyPairGeneratorSpi;
 import java.security.SecureRandom;
 
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.NTL;
 
 public class GMKeyPairGenerator extends KeyPairGeneratorSpi implements CipherConstants
 {

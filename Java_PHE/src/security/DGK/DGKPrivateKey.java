@@ -9,7 +9,7 @@ import java.security.PrivateKey;
 import java.util.HashMap;
 import java.util.Map;
 
-import security.generic.NTL;
+import security.misc.NTL;
 
 public final class DGKPrivateKey implements Serializable, DGK_Key, PrivateKey
 {

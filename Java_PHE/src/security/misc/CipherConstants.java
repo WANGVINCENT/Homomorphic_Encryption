@@ -1,4 +1,4 @@
-package security.generic;
+package security.misc;
 
 import java.math.BigInteger;
 

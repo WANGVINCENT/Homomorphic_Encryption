@@ -19,8 +19,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.NTL;
 
 // Reference
 // https://github.com/dlitz/pycrypto/blob/master/lib/Crypto/PublicKey/ElGamal.py

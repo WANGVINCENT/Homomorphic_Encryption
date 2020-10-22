@@ -12,15 +12,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import security.generic.CipherConstants;
-import security.generic.NTL;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherSpi;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
+
+import security.misc.CipherConstants;
+import security.misc.HomomorphicException;
+import security.misc.NTL;
 
 public class GMCipher extends CipherSpi implements CipherConstants
 {
@@ -396,14 +397,21 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		return engineDoFinal(bytes, 0, bytes.length);	
 	}
 	//------------------------------------------Original BigInteger Code----------------------------------------
-	public static List<BigInteger> encrypt(BigInteger m, GMPublicKey pk)
+	
+	/**
+	 * Encrypt a BigInteger plaintext using Goldwasser-Micali
+	 * @param message - plaintext message
+	 * @param pk - used to encrypt plaintext
+	 * @return - Goldwasser-Micali encrypted bits
+	 */
+	public static List<BigInteger> encrypt(BigInteger message, GMPublicKey pk)
 	{
 		List<BigInteger> enc_bits = new ArrayList<BigInteger>();  
 		BigInteger x = null;
-		for(int i = m.bitLength() - 1; i >= 0 ; i--)
+		for(int i = message.bitLength() - 1; i >= 0 ; i--)
 		{
 			x = NTL.RandomBnd(pk.n);
-			if(m.testBit(i))
+			if(message.testBit(i))
 			{
 				enc_bits.add(pk.y.multiply(x.modPow(TWO, pk.n)).mod(pk.n));
 			}
@@ -416,6 +424,12 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		return enc_bits;
 	}
 
+	/**
+	 * Decrypt Goldwasser-Micali encrypted bits
+	 * @param cipher - List of Goldwasser-Micali encrypted bits
+	 * @param sk - Goldwasser-Micali Private Key to decrypt
+	 * @return
+	 */
 	public static BigInteger decrypt(List<BigInteger> cipher, GMPrivateKey sk)
 	{
 		BigInteger e = BigInteger.ZERO;
@@ -431,6 +445,12 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		return m;
 	}
 
+	/**
+	 * Decrypt Goldwasser-Micali encrypted bits
+	 * @param cipher - List of Goldwasser-Micali encrypted bits
+	 * @param sk - Goldwasser-Micali Private Key to decrypt
+	 * @return
+	 */
 	public static BigInteger decrypt(BigInteger [] cipher, GMPrivateKey sk)
 	{
 		BigInteger e = BigInteger.ZERO;
@@ -446,12 +466,20 @@ public class GMCipher extends CipherSpi implements CipherConstants
 		return m;
 	}
 
-	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
-	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk) throws IllegalArgumentException
+	/**
+	 * XOR the encrypted bits of Goldwasser-Micali
+	 * @param cipher_1 - Goldwasser-Micali encrypted ciphertext
+	 * @param cipher_2 - Goldwasser-Micali encrypted ciphertext
+	 * @param pk - Goldwasser-Micali public key used to encrypt the inputted ciphertexts
+	 * @return XORed encrypted ciphertexts
+	 * @throws IllegalArgumentException
+	 */
+	public static BigInteger[] xor(BigInteger [] cipher_1, BigInteger[] cipher_2, GMPublicKey pk) 
+			throws HomomorphicException
 	{
 		if(cipher_1.length != cipher_2.length)
 		{
-			throw new IllegalArgumentException("Unequal Size of Ciphertext for XOR!");
+			throw new HomomorphicException("Unequal Size of Ciphertext for XOR!");
 		}
 		BigInteger [] xor_solution = new BigInteger[cipher_1.length];
 		for (int i = cipher_1.length - 1; i >= 0 ; i--)
@@ -462,11 +490,12 @@ public class GMCipher extends CipherSpi implements CipherConstants
 	}
 
 	// Homomorphic property of GM, multiplying both cipher-texts gets you the bit XOR
-	public static BigInteger[] xor(List<BigInteger> cipher_1, List<BigInteger> cipher_2, GMPublicKey pk) throws IllegalArgumentException
+	public static BigInteger[] xor(List<BigInteger> cipher_1, List<BigInteger> cipher_2, GMPublicKey pk) 
+			throws HomomorphicException
 	{
 		if(cipher_1.size() != cipher_2.size())
 		{
-			throw new IllegalArgumentException("Unequal Size of Ciphertext for XOR!");
+			throw new HomomorphicException("Unequal Size of Ciphertext for XOR!");
 		}
 		BigInteger [] xor_solution = new BigInteger[cipher_1.size()];
 		for (int i = cipher_1.size() - 1; i >= 0 ; i--)

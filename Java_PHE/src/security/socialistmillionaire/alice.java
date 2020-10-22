@@ -13,8 +13,9 @@ import security.DGK.DGKPublicKey;
 import security.elgamal.ElGamalCipher;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamal_Ciphertext;
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.HomomorphicException;
+import security.misc.NTL;
 import security.paillier.PaillierCipher;
 import security.paillier.PaillierPublicKey;
 
@@ -75,7 +76,17 @@ public final class alice extends socialist_millionaires implements Runnable
 	{
 		return sortedArray;
 	}
-
+	
+	/**
+	 * Please see Protocol 1 with Bob which has parameter y
+	 * Computes the truth value of X <= Y
+	 * @param x - plaintext value
+	 * @return X <= Y
+	 * @throws IOException - Socket Errors
+	 * @throws ClassNotFoundException - Required for casting objects
+	 * @throws IllegalArgumentException - If x or y have more bits 
+	 * than that is supported by the DGK Keys provided
+	 */
 	public boolean Protocol1(BigInteger x) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
@@ -203,8 +214,17 @@ public final class alice extends socialist_millionaires implements Runnable
 		return answer == 1;
 	}
 
+	/**
+	 * 
+	 * @param x - Encrypted Paillier value OR Encrypted DGK value
+	 * @param y - Encrypted Paillier value OR Encrypted DGK value
+	 * @return X >= Y
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 * @throws HomomorphicException
+	 */
 	public boolean Protocol2(BigInteger x, BigInteger y) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		Object bob = null;
 		int deltaB = -1;
@@ -322,22 +342,18 @@ public final class alice extends socialist_millionaires implements Runnable
 		return comparison == 1;
 	}
 
-	public boolean Protocol3(BigInteger x) throws ClassNotFoundException, IOException, IllegalArgumentException
+	/**
+	 * Please review the bob 
+	 * @param x - plaintext value
+	 * @return X <= Y
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	public boolean Protocol3(BigInteger x) throws ClassNotFoundException, IOException
 	{
 		return Protocol3(x, rnd.nextInt(2));
 	}
 	
-	/*
-	 * Input Alice: x (unencrypted BigInteger x)
-	 * Input Bob: y (unencrypted BigInteger y), Private Keys
-	 * 
-	 * Result: [[x <= y]] or [x <= y]
-	 * Alice and Bob WITHOUT revealing x, y
-	 * It is boolean value! 
-	 * x <= y -> [[1]]
-	 * x > y -> [[0]]
-	 */
-
 	private boolean Protocol3(BigInteger x, int deltaA)
 			throws ClassNotFoundException, IOException, IllegalArgumentException
 	{
@@ -419,16 +435,6 @@ public final class alice extends socialist_millionaires implements Runnable
 			{
 				XOR[i] = Encrypted_Y[i];
 			}
-			/*
-			if(x.testBit(i))
-			{
-				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
-			}
-			else
-			{
-				XOR[i] = Encrypted_Y[i];
-			}
-			*/
 		}
 		
 		// Step 3: delta A is computed on initialization, it is 0 or 1.
@@ -463,7 +469,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
 			// if i is NOT in L, just place a random NON-ZERO
-			//int bit = x.testBit(i) ? 1 : 0;
+			// int bit = x.testBit(i) ? 1 : 0;
 			int bit = NTL.bit(x, i);
 			if(bit != deltaA)
 			{
@@ -503,9 +509,15 @@ public final class alice extends socialist_millionaires implements Runnable
 		return answer == 1;
 	}
 	
-	// USED ONLY AS PROTOCOL 3 REPLACEMENT!
-	// WOrks 100% reliably only in DGK Mode as N can skew things a bit, 
-	// especially since I am only using for private comparison NOT sub-protocol
+	
+	/**
+	 * Primarily used in Protocol 4.
+	 * @param r 
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
 	public boolean Modified_Protocol3(BigInteger r)
 			throws ClassNotFoundException, IOException, IllegalArgumentException
 	{
@@ -531,8 +543,6 @@ public final class alice extends socialist_millionaires implements Runnable
 		return answer;
 	}
 	
-	// Modified Protocol 3 for Protocol 4
-	// This should mostly use ONLY DGK stuff!
 	private boolean Modified_Protocol3(BigInteger alpha, BigInteger r, int deltaA) 
 			throws ClassNotFoundException, IOException, IllegalArgumentException
 	{
@@ -763,8 +773,17 @@ public final class alice extends socialist_millionaires implements Runnable
 		return answer == 1;
 	}
 	
+	/**
+	 * 
+	 * @param x - Encrypted Paillier value OR Encrypted DGK value
+	 * @param y - Encrypted Paillier value OR Encrypted DGK value
+	 * @return
+	 * @throws IOException - socket errors
+	 * @throws ClassNotFoundException
+	 * @throws HomomorphicException
+	 */
 	public boolean Protocol4(BigInteger x, BigInteger y) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		int deltaB = -1;
 		int x_leq_y = -1;
@@ -1075,19 +1094,19 @@ public final class alice extends socialist_millionaires implements Runnable
 		return comparison == 1;
 	}
 	
-	/*
-	 * See Protocol 2:
-	 * Encrypted Integer Division by
-	 * Thjis Veugen
-	 * 
-	 * Input Alice: [x] and d
-	 * Input Bob: d, and Private Key K
-	 * Output Alice: [x/d]
+	
+	/**
+	 * Please review Protocol 2 in the "Encrypted Integer Division" paper by Thjis Veugen
+	 * @param x - Encrypted Paillier value or Encrypted DGK value
+	 * @param d - plaintext divisor
+	 * @return Encrypted Pailier value [x/d] or Encrypted DGK value [x/d]
+	 * @throws IOException - Any socket errors
+	 * @throws ClassNotFoundException
+	 * @throws HomomorphicException 
 	 * Constraints: 0 <= x <= N * 2^{-sigma} and 0 <= d < N
 	 */
-	
 	public BigInteger division(BigInteger x, long d) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException,  HomomorphicException
 	{
 		/*
 		if(isDGK)
@@ -1118,7 +1137,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		BigInteger c = null;
 		BigInteger z = null;
 		BigInteger r = null;
-		//BigInteger N = null;
+
 		int t = 0;
 		
 		// Step 1
@@ -1242,7 +1261,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 
 	public BigInteger multiplication(BigInteger x, BigInteger y) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, IllegalArgumentException, HomomorphicException
 	{
 		Object in = null;
 		BigInteger x_prime = null;
@@ -1425,7 +1444,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	// https://www.geeksforgeeks.org/maximum-and-minimum-in-an-array/
 	// NOTE: THIS DOES NOT TURN OFF BOB!!!
 	private Pair getMinMax(List<BigInteger> arr) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		boolean activation = false;
 		Pair results = new Pair();   
@@ -1555,7 +1574,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	// https://www.geeksforgeeks.org/maximum-and-minimum-in-an-array/
 	// NOTE; THIS DOES NOT TURN OF BOB!!!
 	private Pair getMinMax(BigInteger [] arr) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		Pair results = new Pair();   
 		int i;
@@ -1683,7 +1702,7 @@ public final class alice extends socialist_millionaires implements Runnable
 
 	// To sort an array of encrypted numbers
 	public void sortArray() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		Pair res;
 		
@@ -1807,7 +1826,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	// ---------------We also use this to obtain K-Min/K-max items----
 	
 	private void bubbleSort(BigInteger [] arr)
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, IllegalArgumentException, HomomorphicException
 	{
 		boolean activation = false;
 		for (int i = 0; i < arr.length - 1; i++)
@@ -1838,7 +1857,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	public BigInteger[] getKMax(BigInteger [] input, int k) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, IllegalArgumentException, HomomorphicException
 	{
 		if(k > input.length || k <= 0)
 		{
@@ -1935,7 +1954,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	public BigInteger[] getKMin(BigInteger [] input, int k) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		if(k > input.length || k <= 0)
 		{
@@ -1985,7 +2004,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	public BigInteger[] getKMin(List<BigInteger> input, int k) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		if(k > input.size() || k <= 0)
 		{
@@ -2048,7 +2067,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	    pivot and all greater elements to right
 	    of pivot */
 	private int partition(BigInteger arr[], int low, int high)
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		boolean activation = false;
 		BigInteger pivot = arr[high]; 
@@ -2092,7 +2111,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	 * high  --> Ending index 
 	 */
 	private void sort(BigInteger arr[], int low, int high)
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		if (low < high)
 		{
@@ -2109,7 +2128,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	
 	// --------------Merge Sort---------------------
 	private void doMergeSort(int lowerIndex, int higherIndex) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		if (lowerIndex < higherIndex)
 		{
@@ -2124,7 +2143,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 
 	private void mergeParts(int lowerIndex, int middle, int higherIndex)
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		boolean activation = false;
 		int i = lowerIndex;
@@ -2171,7 +2190,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			sortArray();
 		}
-		catch (ClassNotFoundException | IOException | IllegalArgumentException e) 
+		catch (ClassNotFoundException | IOException | IllegalArgumentException | HomomorphicException e) 
 		{
 			e.printStackTrace();
 		}

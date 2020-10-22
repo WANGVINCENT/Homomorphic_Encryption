@@ -5,7 +5,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGeneratorSpi;
 import java.security.SecureRandom;
 
-import security.generic.CipherConstants;
+import security.misc.CipherConstants;
 
 public class PaillierKeyPairGenerator extends KeyPairGeneratorSpi implements CipherConstants
 {
@@ -20,13 +20,11 @@ public class PaillierKeyPairGenerator extends KeyPairGeneratorSpi implements Cip
 		this.rnd = random;
 		if (keysize % 2 != 0)
 		{
-			throw new IllegalArgumentException("NUMBER OF BITS SHOULD BE EVEN!");
+			throw new IllegalArgumentException("Require even number of bits!");
 		}
-		
-		// I will NOT allow weaker than 1024 bit keys!
 		if (keysize < 1024)
 		{
-			return;
+			throw new IllegalArgumentException("Minimum strength of 1024 bits required!");
 		}		
 		this.keysize = keysize;
 	}

@@ -14,14 +14,14 @@ import security.elgamal.ElGamalCipher;
 import security.elgamal.ElGamalPrivateKey;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamal_Ciphertext;
-import security.generic.NTL;
+import security.misc.HomomorphicException;
+import security.misc.NTL;
 import security.paillier.PaillierCipher;
 import security.paillier.PaillierPublicKey;
 import security.paillier.PaillierPrivateKey;
 
 public final class bob extends socialist_millionaires implements Runnable
 {
-	// YOU SHOULD USE THIS CONSTRUCTOR!
 	public bob (Socket clientSocket,
 			KeyPair a, KeyPair b) throws IOException, IllegalArgumentException
 	{
@@ -92,9 +92,12 @@ public final class bob extends socialist_millionaires implements Runnable
 		this.debug();
 	}
 	
-	// This is used for Alice to sort an array of encryped numbers!
+	/**
+	 * if Alice wants to sort a list of encrypted numbers, use this method if you 
+	 * will consistently sort using Protocol 2
+	 */
 	private void repeat_Protocol2()
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		long start_time = System.nanoTime();
 		int counter = 0;
@@ -107,9 +110,12 @@ public final class bob extends socialist_millionaires implements Runnable
 		System.out.println("Protocol 2 completed in " + (System.nanoTime() - start_time)/BILLION + " seconds!");
 	}
 	
-	// This is used for Alice to sort an array of encrypted numbers!
+	/**
+	 * if Alice wants to sort a list of encrypted numbers, use this method if you 
+	 * will consistently sort using Protocol 4
+	 */
 	private void repeat_Protocol4()
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		long start_time = System.nanoTime();
 		int counter = 0;
@@ -130,7 +136,10 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 	}
 	
-	// This is used for Alice to sort an array of encrypted numbers!
+	/**
+	 * if Alice wants to sort a list of encrypted numbers, use this method if you 
+	 * will consistently sort using Protocol 4
+	 */
 	public void repeat_ElGamal_Protocol4()
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
@@ -145,6 +154,14 @@ public final class bob extends socialist_millionaires implements Runnable
 		System.out.println("ElGamal Protocol 4 completed in " + (System.nanoTime() - start_time)/BILLION + " seconds!");
 	}
 	
+	/**
+	 * Please review "Improving the DGK comparison protocol" - Protocol 1
+	 * @param y - plaintext value
+	 * @return X <= Y
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 * @throws IllegalArgumentException - if y has more bits than is supported by provided DGK keys
+	 */
 	public boolean Protocol1(BigInteger y) 
 			throws IOException, ClassNotFoundException, IllegalArgumentException
 	{
@@ -163,29 +180,15 @@ public final class bob extends socialist_millionaires implements Runnable
 		BigInteger [] EncY = new BigInteger[y.bitLength()];
 		for (int i = 0; i < y.bitLength(); i++)
 		{
-			/*
-			if(y.testBit(i))
-			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 1);
-			}
-			else
-			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 0);	
-			}
-			*/
 			EncY[i] = DGKOperations.encrypt(pubKey, NTL.bit(y, i));
 		}
 		toAlice.writeObject(EncY);
 		toAlice.flush();
-
+		
 		// Step 2: Alice...
-
 		// Step 3: Alice...
-
 		// Step 4: Alice...
-
 		// Step 5: Alice...
-
 		// Step 6: Check if one of the numbers in C_i is decrypted to 0.
 		in = fromAlice.readObject();
 		if(in instanceof BigInteger[])
@@ -230,10 +233,18 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 	}
 	
-	// NOTE: AS STATED IN CORRECTION PAPER
-	// THIS COMPUTES [[X >= Y]] NOT [X <= Y]]
+	/**
+	 * Please review "Improving the DGK comparison protocol" - Protocol 1
+	 * NOTE: The paper has a typo!
+	 * This protocol computes X >= Y NOT X <= Y
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 * @throws HomomorphicException
+	 */
+	
 	public boolean Protocol2() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		// Step 1: Receive z from Alice
 		// Get the input and output streams
@@ -258,24 +269,23 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Bob Step 1: Invalid Object!" + x.getClass().getName());
 		}
-
+		
 		//[[z]] = [[x - y + 2^l + r]]
 		z = PaillierCipher.decrypt(z, sk);
 		
-
 		// Step 2: compute Beta = z (mod 2^l),
 		beta = NTL.POSMOD(z, powL);
-
+		
 		// Step 3: Alice computes r (mod 2^l) (Alpha)
 		// Step 4: Run Protocol 3
 		Protocol3(beta);
-
+		
 		// Step 5: Send [[z/2^l]], Alice has the solution from Protocol 3 already...
 		toAlice.writeObject(PaillierCipher.encrypt(z.divide(powL), pk));
 		toAlice.flush();
-
+		
 		// Step 6 - 7: Alice Computes [[x <= y]]
-
+		
 		// Step 8 (UNOFFICIAL): Alice needs the answer for [[x <= y]]
 		x = fromAlice.readObject();
 		if (x instanceof BigInteger)
@@ -291,14 +301,14 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 	}
 
-	/*
-	 * Input Alice: x (unencrypted BigInteger x)
-	 * Input Bob: y (unencrypted BigInteger y), Private Keys
-	 * 
-	 * Result: 
-	 * Alice and Bob WITHOUT revealing x, y know
-	 * 0 -> x <= y
-	 * 1 -> x > y
+	/**
+	 * Please review "Improving the DGK comparison protocol" - Protocol 3
+	 * Note: Bob already has the private keys upon initialization
+	 * @param y - plaintext value
+	 * @return
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 * @throws IllegalArgumentException
 	 */
 
 	public boolean Protocol3(BigInteger y)
@@ -330,17 +340,17 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		toAlice.writeObject(EncY);
 		toAlice.flush();
-
+		
 		//Step 2: Wait for Alice to compute x XOR y
-
+		
 		//Step 3: Wait for Alice to compute set L and gamma A
-
+		
 		//Step 4: Wait for Alice to compute the array of C_i
-
+		
 		//Step 5: After blinding, Alice sends C_i to Bob
-
+		
 		//Step 6: Bob checks if there is a 0 in C_i and seta deltaB accordingly
-
+		
 		/*
 		 * Currently by design of the program
 		 * 1- Alice KNOWS that bob will assume deltaB = 0.
@@ -545,8 +555,15 @@ public final class bob extends socialist_millionaires implements Runnable
 		return answer == 1;
 	}
 	
+	/**
+	 * Please review Correction to "Improving the DGK comparison protocol” - Protocol 3
+	 * @return
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 * @throws HomomorphicException
+	 */
 	public boolean Protocol4() 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		// Constraint for Paillier
 		if(!isDGK && pubKey.getL() + 2 >= pk.keysize)
@@ -571,7 +588,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Protocol 4: No BigInteger found! " + x.getClass().getName());
 		}
-
+		
 		if(isDGK)
 		{
 			z = BigInteger.valueOf(DGKOperations.decrypt(privKey, z));
@@ -580,14 +597,14 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			z = PaillierCipher.decrypt(z, sk);
 		}
-
+		
 		// Step 2: compute Beta = z (mod 2^l), 
 		beta = NTL.POSMOD(z, powL);
-
+		
 		// Step 3: Alice computes r (mod 2^l) (Alpha)
-
 		// Step 4: Run Modified DGK Comparison Protocol
 		// true --> run Modified protocol 3
+		
 		if(fromAlice.readBoolean())
 		{
 			Modified_Protocol3(beta, z);
@@ -596,7 +613,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			Protocol3(beta);
 		}
-
+		
 		//Step 5" Send [[z/2^l]], Alice has the solution from Protocol 3 already..
 		if(isDGK)
 		{
@@ -676,9 +693,9 @@ public final class bob extends socialist_millionaires implements Runnable
 		
 		// Step 2: compute Beta = z (mod 2^l), 
 		beta = NTL.POSMOD(z, powL);
-
+		
 		// Step 3: Alice computes r (mod 2^l) (Alpha)
-
+		
 		// Step 4: Run Modified DGK Comparison Protocol
 		// true --> run Modified protocol 3
 		if(fromAlice.readBoolean())
@@ -689,7 +706,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			Protocol3(beta);
 		}
-
+		
 		//Step 5" Send [[z/2^l]], Alice has the solution from Protocol 3 already..
 		zeta_one = ElGamalCipher.encrypt(e_pk, z.divide(powL));
 		if(z.compareTo(N.subtract(BigInteger.ONE).divide(TWO)) == -1)
@@ -703,9 +720,8 @@ public final class bob extends socialist_millionaires implements Runnable
 		toAlice.writeObject(zeta_one);
 		toAlice.writeObject(zeta_two);
 		toAlice.flush();
-
+		
 		//Step 6 - 7: Alice Computes [[x >= y]]
-
 		//Step 8 (UNOFFICIAL): Alice needs the answer...
 		x = fromAlice.readObject();
 		if (x instanceof ElGamal_Ciphertext)
@@ -730,7 +746,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		ElGamal_Ciphertext enc_y_prime = null;
 		BigInteger x_prime = null;
 		BigInteger y_prime = null;
-
+		
 		// Step 2
 		in = fromAlice.readObject();
 		if(in instanceof ElGamal_Ciphertext)
@@ -741,7 +757,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Didn't get [[x']] from Alice: " + in.getClass().getName());
 		}
-
+		
 		in = fromAlice.readObject();
 		if(in instanceof ElGamal_Ciphertext)
 		{
@@ -751,7 +767,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Didn't get [[y']] from Alice: " + in.getClass().getName());		
 		}
-
+		
 		// Step 3
 		x_prime = ElGamalCipher.decrypt(e_sk, enc_x_prime);
 		y_prime = ElGamalCipher.decrypt(e_sk, enc_y_prime);
@@ -838,7 +854,7 @@ public final class bob extends socialist_millionaires implements Runnable
 	}
 	
 	public void multiplication() 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		Object in = null;
 		BigInteger x_prime = null;
@@ -884,7 +900,7 @@ public final class bob extends socialist_millionaires implements Runnable
 	}
 	
 	public void division(long divisor) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		BigInteger c = null;
 		BigInteger z = null;
@@ -933,7 +949,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		 */
 	}
 	
-	public void sendPublicKeys() throws IOException
+	protected void sendPublicKeys() throws IOException
 	{
 		if(pubKey != null)
 		{
@@ -992,7 +1008,7 @@ public final class bob extends socialist_millionaires implements Runnable
 				repeat_Protocol4();
 			}
 		}
-		catch (ClassNotFoundException | IOException | IllegalArgumentException e) 
+		catch (ClassNotFoundException | IOException | IllegalArgumentException | HomomorphicException e) 
 		{
 			e.printStackTrace();
 		}

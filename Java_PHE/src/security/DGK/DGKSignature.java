@@ -135,7 +135,6 @@ public class DGKSignature extends SignatureSpi
 	{
 		return engineVerify(signature);
 	}
-		
 	
 	public static BigInteger sign(BigInteger message, DGKPrivateKey privKey)
 			throws IllegalArgumentException

@@ -23,12 +23,13 @@ import security.elgamal.ElGamalCipher;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamalSignature;
 import security.elgamal.ElGamal_Ciphertext;
-import security.generic.CipherConstants;
-import security.generic.NTL;
 import security.gm.GMCipher;
 import security.gm.GMKeyPairGenerator;
 import security.gm.GMPrivateKey;
 import security.gm.GMPublicKey;
+import security.misc.CipherConstants;
+import security.misc.HomomorphicException;
+import security.misc.NTL;
 import security.paillier.PaillierCipher;
 import security.paillier.PaillierKeyPairGenerator;
 import security.paillier.PaillierPrivateKey;
@@ -212,7 +213,7 @@ public class Main
 	}
 	
 	public static void k_min() 
-			throws ClassNotFoundException, IllegalArgumentException, IOException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		List<ElGamal_Ciphertext> t = new ArrayList<ElGamal_Ciphertext>();
 		BigInteger [] toSort = new BigInteger[low.length];
@@ -248,7 +249,7 @@ public class Main
 	}
 	
 	// ------------------------------------ Basic demo methods-------------------------------------
-	public static void alice_demo() throws ClassNotFoundException, IOException
+	public static void alice_demo() throws ClassNotFoundException, IOException, HomomorphicException
 	{	
 		// Check the multiplication, DGK
 		Niu.setDGKMode(true);
@@ -387,7 +388,7 @@ public class Main
 		Niu.division(d, 25);//100/25 = 4
 	}
 	
-	public static void bob_demo() throws ClassNotFoundException, IOException
+	public static void bob_demo() throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		// Test out-source multiplication, DGK
 		andrew.setDGKMode(true);
@@ -554,7 +555,7 @@ public class Main
 	// -------------------------------show basic functionality of Protocol 1 - 4  with DGK and Paillier-------------------------
 	
 	public static void alice_Paillier() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		System.out.println("Start Paillier Test");
 		Niu.setDGKMode(false);
@@ -630,7 +631,7 @@ public class Main
 	}
 	
 	public static void alice_DGK()
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		System.out.println("Start DGK Test");
 		long start;
@@ -709,7 +710,7 @@ public class Main
 	}
 	
 	public static void bob() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		BigInteger b = NTL.generateXBitRandom(15);
 		System.out.println("b: " + b);
@@ -972,7 +973,7 @@ public class Main
 	// ----------------------------All Stress Test methods for Crypto-------------------------------------------------
 
 	//------------------------------------- Stress test crypto methods------------------------------------------
-	public static void Paillier_Test() throws InvalidKeyException, SignatureException
+	public static void Paillier_Test() throws InvalidKeyException, SignatureException, HomomorphicException
 	{
 		System.out.println("-----------PAILLIER TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
 		long start = 0;

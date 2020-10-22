@@ -11,8 +11,8 @@ import javax.crypto.ShortBufferException;
 
 import security.DGK.DGKPrivateKey;
 import security.DGK.DGKPublicKey;
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.NTL;
 
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
@@ -21,12 +21,10 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 
 import java.security.SecureRandom;
-
 import java.security.spec.AlgorithmParameterSpec;
 
-
 import java.util.ArrayList;
-
+import java.util.List;
 
 public final class DGKOperations extends CipherSpi implements CipherConstants
 {
@@ -370,6 +368,25 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		ciphertextSize = (((modulusLength + 12) / 8) * 2)-1;
 	}
 	
+	// --------------------PUBLIC FACING METHODS--------------------------
+	public void init(int encryptMode, DGKPublicKey pk) 
+			throws InvalidKeyException, InvalidAlgorithmParameterException
+	{
+		engineInit(encryptMode, pk, new SecureRandom());
+	}
+
+	public void init(int decryptMode, DGKPrivateKey sk)
+			throws InvalidKeyException, InvalidAlgorithmParameterException 
+	{
+		engineInit(decryptMode, sk, new SecureRandom());
+	}
+	
+	public byte[] doFinal(byte[] bytes) 
+			throws BadPaddingException, IllegalBlockSizeException 
+	{
+		return engineDoFinal(bytes, 0, bytes.length);	
+	}
+	
 	//--------------------------------Old DGK Operations----------------------------------
 	public static BigInteger encrypt(DGKPublicKey pubKey, BigInteger plaintext)
 	{
@@ -381,10 +398,15 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		return encrypt(pubKey, plaintext);
 	}
 
+	/**
+	 * Encrypt plaintext with DGK Public Key
+	 * @param pubKey - use this to encrypt plaintext
+	 * @param plaintext 
+	 * @return - DGK ciphertext
+	 */
 	public static BigInteger encrypt(DGKPublicKey pubKey, long plaintext)
 	{
 		BigInteger ciphertext;
-		//System.err.println("Exception not thrown this time...I hope you are using Protocol 1/Modified Protocol 3");
 		if (plaintext < -1)
 		{
 			throw new IllegalArgumentException("Encryption Invalid Parameter: the plaintext is not in Zu (plaintext < 0)"
@@ -409,25 +431,6 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		// First part = g^m
 		BigInteger firstpart = pubKey.gLUT.get(plaintext);
 		BigInteger secondpart = pubKey.h.modPow(r, pubKey.n);
-		
-		/*
-		BigInteger secondpart = BigInteger.ONE;
-		for(long i = 0; i < r.bitLength(); ++i)
-		{
-			//second part = h^r
-			if(NTL.bit(r, i) == 1)
-			{
-				if(pubKey.hLUT.get(i) == null)
-				{
-					// e = 2^i (mod n)
-					// f(i) = h^{2^i}(mod n)	
-					BigInteger e = TWO.pow((int) i).mod(pubKey.n);
-					pubKey.hLUT.put(i, pubKey.h.modPow(e, pubKey.n));
-				}
-				secondpart = secondpart.multiply(pubKey.hLUT.get(i));
-			}
-		}
-		*/
 		ciphertext = NTL.POSMOD(firstpart.multiply(secondpart), pubKey.n);
 		return ciphertext;
 	}
@@ -436,7 +439,15 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 	{
 		return BigInteger.valueOf(decrypt(privKey, ciphertext));
 	}
-
+	/**
+	 * Compute DGK decryption
+	 * c = g^m * h^r (mod n)
+	 * c^vp (mod p) = g^{vp*m} (mod p), Because h^{vp} (mod p) = 1
+	 * Use the pre-computed hashmap to retrieve m.
+	 * @param privKey - used to decrypt ciphertext
+	 * @param ciphertext - DGK ciphertext
+	 * @return
+	 */
 	public static long decrypt(DGKPrivateKey privKey, BigInteger ciphertext)
 	{
 		if (ciphertext.signum() == -1)
@@ -449,15 +460,8 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 			throw new IllegalArgumentException("decryption Invalid Parameter : the cipher text is not in Zn,"
 					+ " value of cipher text is: (c > n): " + ciphertext);
 		}
-
-		// You technically can use c^v (mod n), but you need to use a different LUT it seems...
-		BigInteger decipher = NTL.POSMOD(ciphertext.modPow(privKey.vp, privKey.p), privKey.p);
 		
-		/*
-		c = g^m * h^r (mod n)
-		c^vp (mod p) = g^{vp*m} (mod p)
-		Because h^{vp} (mod p) = 1
-		 */
+		BigInteger decipher = NTL.POSMOD(ciphertext.modPow(privKey.vp, privKey.p), privKey.p);
 		Long plain = privKey.LUT.get(decipher);
 		if(plain == null)
 		{
@@ -466,7 +470,14 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		return plain;
 	}
 
-	//[a] * [b] = [a * b]
+	/**
+	 * Compute DGK encryped sum. 
+	 * [a] * [b] = [a + b] 
+	 * @param pubKey - DGK public key used to encrypt DGK ciphertext a and b.
+	 * @param a - DGK ciphertext
+	 * @param b - DGK ciphertext
+	 * @return - DGK Encrypted sum of a and b
+	 */
 	public static BigInteger add(DGKPublicKey pubKey, BigInteger a, BigInteger b)
 	{
 		if (a.signum() ==-1 || a.compareTo(pubKey.n) == 1)
@@ -523,7 +534,6 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		{
 			throw new IllegalArgumentException("DGKMultiply Invalid Parameter: the ciphertext is not in Zn: " + cipher);
 		}
-		// For now, I will permit negative number multiplication, especially for SST REU 2017
 		if(plaintext.compareTo(pubKey.bigU) == 1)
 		{
 			throw new IllegalArgumentException("DGKMultiply Invalid Parameter:  the plaintext is not in Zu: " + pubKey.bigU);
@@ -582,7 +592,7 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		return sum;
 	}
 	
-	public static BigInteger sum (DGKPublicKey pubKey, ArrayList<BigInteger> parts)
+	public static BigInteger sum (DGKPublicKey pubKey, List<BigInteger> parts)
 	{
 		BigInteger sum = DGKOperations.encrypt(pubKey, 0);
 		for (int i = 0; i < parts.size(); i++)
@@ -592,7 +602,7 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		return sum;
 	}
 
-	public static BigInteger sum (DGKPublicKey pubKey, ArrayList<BigInteger> parts, int limit)
+	public static BigInteger sum (DGKPublicKey pubKey, List<BigInteger> parts, int limit)
 	{
 		BigInteger sum = DGKOperations.encrypt(pubKey, 0);
 		if (limit > parts.size())
@@ -610,7 +620,7 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		return sum;
 	}
 	
-	public static BigInteger sum_product (DGKPublicKey pubKey, ArrayList<BigInteger> cipher, ArrayList<Long> plain)
+	public static BigInteger sum_product (DGKPublicKey pubKey, List<BigInteger> cipher, List<Long> plain)
 	{
 		if(cipher.size() != plain.size())
 		{
@@ -638,24 +648,5 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 			product_vector[i] = DGKOperations.multiply(pubKey, cipher[i], plain[i]);
 		}
 		return sum(pubKey, product_vector);
-	}
-	
-	// PUBLIC FACING METHODS
-	public void init(int encryptMode, DGKPublicKey pk) 
-			throws InvalidKeyException, InvalidAlgorithmParameterException
-	{
-		engineInit(encryptMode, pk, new SecureRandom());
-	}
-
-	public void init(int decryptMode, DGKPrivateKey sk)
-			throws InvalidKeyException, InvalidAlgorithmParameterException 
-	{
-		engineInit(decryptMode, sk, new SecureRandom());
-	}
-	
-	public byte[] doFinal(byte[] bytes) 
-			throws BadPaddingException, IllegalBlockSizeException 
-	{
-		return engineDoFinal(bytes, 0, bytes.length);	
-	}
-}//END OF CLASS
+	}	
+}

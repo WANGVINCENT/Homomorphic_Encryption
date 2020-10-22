@@ -8,7 +8,7 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.HashMap;
 
-import security.generic.CipherConstants;
+import security.misc.CipherConstants;
 
 public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Runnable, CipherConstants
 {

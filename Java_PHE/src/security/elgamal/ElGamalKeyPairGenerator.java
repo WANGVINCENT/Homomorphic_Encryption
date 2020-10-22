@@ -6,8 +6,8 @@ import java.security.KeyPairGeneratorSpi;
 import java.security.SecureRandom;
 import java.util.Random;
 
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.NTL;
 
 public class ElGamalKeyPairGenerator extends KeyPairGeneratorSpi implements CipherConstants
 {

@@ -9,7 +9,7 @@ import java.security.PrivateKey;
 import java.util.HashMap;
 import java.util.Map;
 
-import security.generic.CipherConstants;
+import security.misc.CipherConstants;
 
 public final class ElGamalPrivateKey implements ElGamal_Key, Serializable, PrivateKey, Runnable, CipherConstants
 {

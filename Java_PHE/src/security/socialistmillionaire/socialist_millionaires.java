@@ -135,7 +135,10 @@ public abstract class socialist_millionaires
 		}
 	}
 	
-	// BigIntegers are immutable, this should do the trick
+	/**
+	 * Create deep copy of BigInteger array
+	 * @param input
+	 */
 	protected BigInteger [] deep_copy(BigInteger [] input)
 	{
 		BigInteger [] copy = new BigInteger[input.length];
@@ -146,9 +149,12 @@ public abstract class socialist_millionaires
 		return copy;
 	}
 	
-	// Used to shuffle the encrypted bits
-	// NOTE THIS METHOD DOES NOT ALLOCATE A NEW ARRAY!
-	// SO BE CAREFUL WITH POINTER MANAGEMENT HERE!
+	/**
+	 *  Used to shuffle the encrypted bits.
+	 *  Note: IT DOES NOT CREATE A NEW ARRAY.
+	 * @param array 
+	 * @return - shuffled array
+	 */
 	protected BigInteger[] shuffle_bits(BigInteger[] array) 
 	{
 		for (int i = 0; i < array.length; i++)

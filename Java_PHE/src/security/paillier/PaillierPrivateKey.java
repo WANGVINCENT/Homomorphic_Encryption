@@ -11,23 +11,6 @@ import java.security.PrivateKey;
 // https://github.com/AndrewQuijano/bc-java/blob/master/prov/src/main/java/org/bouncycastle/jcajce/provider/asymmetric/
 	
 //org/bouncycastle/jcajce/provider/asymmetric/
-/*
-import java.util.Enumeration;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERNull;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.jcajce.provider.asymmetric.util.KeyUtil;
-import org.bouncycastle.jcajce.provider.asymmetric.util.PKCS12BagAttributeCarrierImpl;
-import org.bouncycastle.jce.interfaces.PKCS12BagAttributeCarrier;
-*/
 
 //Check
 //package org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateKey;
@@ -99,10 +82,10 @@ public final class PaillierPrivateKey implements Serializable, PaillierKey, Priv
 		return modulus;
 	}
 	
-    public BigInteger getN()
-    {
-    	return n;
-    }
+	public BigInteger getN()
+	{
+		return n;
+	}
 
 	public String getAlgorithm() 
 	{

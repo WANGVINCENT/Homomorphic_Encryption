@@ -5,8 +5,9 @@ import java.security.KeyPair;
 import java.security.KeyPairGeneratorSpi;
 import java.security.SecureRandom;
 
-import security.generic.CipherConstants;
-import security.generic.NTL;
+import security.misc.CipherConstants;
+import security.misc.HomomorphicException;
+import security.misc.NTL;
 
 public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements CipherConstants
 {
@@ -17,27 +18,42 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 	private boolean no_skip_public_key_maps = true;
 	private SecureRandom rnd = null;
 	
-	public DGKKeyPairGenerator(int l, int t, int k)
+	/**
+	 * Initialize DGK Key pair generator and sets DGK parameters
+	 * @param l - sets size of plaintext
+	 * @param t - security parameter
+	 * @param k - number of bits of keys
+	 * @throws HomomorphicException
+	 */
+	public DGKKeyPairGenerator(int l, int t, int k) throws HomomorphicException
 	{
-		// First check that all the parameters of the KeyPair are coherent throw an exception otherwise
 		if (l < 0 || l > 32)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: plaintext space must be less than 32 bits");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: plaintext space must be less than 32 bits");
 		}
-
+		
 		if (l > t || t > k)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have l < k < t");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have l < k < t");
 		}
-
+		
 		if (k/2 < t + l + 1)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
 		}
-
+		
 		if (t % 2 != 0)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: t must be divisible by 2 ");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: t must be divisible by 2 ");
+		}
+		
+		if (k % 2 != 0)
+		{
+			throw new IllegalArgumentException("Require even number of bits!");
+		}
+		if (k < 1024)
+		{
+			throw new IllegalArgumentException("Minimum strength of 1024 bits required!");
 		}
 		
 		this.l = l;
@@ -51,21 +67,21 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 		return l;
 	}
 	
-	public void setL(int l)
+	public void setL(int l) throws HomomorphicException
 	{
 		if (l < 0 || l > 32)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: plaintext space must be less than 32 bits");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: plaintext space must be less than 32 bits");
 		}
 
 		if (l > this.t || this.t > this.k)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have l < k < t");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have l < k < t");
 		}
 
 		if (this.k/2 < this.t + l + 1)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
 		}
 		this.l = l;
 	}
@@ -75,40 +91,40 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 		return t;
 	}
 	
-	public void setT(int t)
+	public void setT(int t) throws HomomorphicException
 	{
 		if (this.l > t || t > this.k)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have l < k < t");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have l < k < t");
 		}
-
+		
 		if (this.k/2 < t + this.l + 1)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
 		}
-
+		
 		if (t % 2 != 0)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: t must be divisible by 2 ");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: t must be divisible by 2 ");
 		}
 		this.t = t;
 	}
 	
 	public int getK()
 	{
-		return k;
+		return this.k;
 	}
 	
-	public void setK(int k)
+	public void setK(int k) throws HomomorphicException
 	{
 		if (this.l > this.t || this.t > k)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have l < k < t");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have l < k < t");
 		}
 
 		if (k/2 < this.t + this.l + 1)
 		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
+			throw new HomomorphicException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
 		}
 		this.k = k;
 	}
@@ -123,21 +139,15 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 		return no_skip_public_key_maps;
 	}
 
-	public void initialize(int k, SecureRandom random) 
+	public void initialize(int k, SecureRandom random)
 	{
-		if (this.l > this.t || this.t > k)
-		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have l < k < t");
-		}
-
-		if (k/2 < this.t + this.l + 1)
-		{
-			throw new IllegalArgumentException("DGK Keygen Invalid parameters: we must have k > k/2 < t + l");
-		}
 		this.k = k;
 		this.rnd = random;
 	}
 
+	/**
+	 * @return DGK Keypair
+	 */
 	public KeyPair generateKeyPair() 
 	{
 		long start_time = System.nanoTime();
@@ -166,11 +176,10 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 			vq = new BigInteger(this.t, CERTAINTY, this.rnd);//(160, 40, random)
 			vpvq = vp.multiply(vq);
 			tmp = u.multiply(vp);
-
 			System.out.println("Completed generating vp, vq");
-
+			
 			int needed_bits = this.k/2 - (tmp.bitLength());
-
+			
 			// Generate rp until p is prime such that u * vp divides p-1
 			do
 			{
@@ -185,7 +194,7 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 				p = rp.multiply(tmp).add(BigInteger.ONE);
 			}
 			while(!p.isProbablePrime(CERTAINTY));
-
+			
 			tmp = u.multiply(vq);
 			needed_bits = this.k/2 - (tmp.bitLength());
 			do
@@ -194,8 +203,7 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 				rq = new BigInteger(needed_bits, rnd);
 				rq = rq.setBit(needed_bits -1);
 				q = rq.multiply(tmp).add(BigInteger.ONE); // q = rq*(vq*u) + 1
-				//
-
+				
 				/*
 				 * q - 1 | rq * vq * u
 				 * Therefore,
@@ -216,83 +224,80 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 		n = p.multiply(q);
 		tmp = rp.multiply(rq).multiply(u);
 		System.out.println("While Loop 1: n, p and q is generated.");
-
+		
 		while(true)
 		{
 			//Generate n bit random number
 			r = NTL.generateXBitRandom(n.bitLength());	
 			h = r.modPow(tmp, n); // h = r^{rp*rq*u} (mod n)
-
+			
 			if (h.equals(BigInteger.ONE))
 			{
 				continue;
 			}
-
+			
 			if (h.modPow(vp,n).equals(BigInteger.ONE))
 			{
 				continue;//h^{vp}(mod n) = 1
 			}
-
+			
 			if (h.modPow(vq,n).equals(BigInteger.ONE))
 			{
 				continue;//h^{vq}(mod n) = 1
 			}
-
+			
 			if (h.modPow(u, n).equals(BigInteger.ONE))
 			{
 				continue;//h^{u}(mod n) = 1
 			}
-
+			
 			if (h.modPow(u.multiply(vq), n).equals(BigInteger.ONE))
 			{
 				continue;//h^{u*vq} (mod n) = 1
 			}
-
+			
 			if (h.modPow(u.multiply(vp), n).equals(BigInteger.ONE))
 			{
 				continue;//h^{u*vp} (mod n) = 1
 			}
-
+			
 			if (h.gcd(n).equals(BigInteger.ONE))
 			{
 				break;//(h, n) = 1
 			}
 		}
-
+		
 		BigInteger rprq = rp.multiply(rq);
 		System.out.println("While loop 2: h is generated");
-
+		
 		while(true)
 		{
 			r = NTL.generateXBitRandom(n.bitLength());
 			g = r.modPow(rprq, n); //g = r^{rp*rq}(mod n)
-
+			
 			if (g.equals(BigInteger.ONE))
 			{
 				continue;// g = 1
 			}
-
+			
 			if (!g.gcd(n).equals(BigInteger.ONE))
 			{
 				continue;//(g, n) must be relatively prime
 			}
 			// h can still be of order u, vp, vq , or a combination of them different that u, vp, vq
-
 			if (g.modPow(u, n).equals(BigInteger.ONE))
 			{
 				continue;//g^{u} (mod n) = 1
 			}
-
 			if (g.modPow(u.multiply(u), n).equals(BigInteger.ONE))
 			{
 				continue;//g^{u*u} (mod n) = 1
 			}
-
 			if (g.modPow(u.multiply(u).multiply(vp), n).equals(BigInteger.ONE))
 			{
 				continue;//g^{u*u*vp} (mod n) = 1
 			}
-
+			
 			if (g.modPow(u.multiply(u).multiply(vq), n).equals(BigInteger.ONE))
 			{
 				continue;//g^{u*u*vp} (mod n) = 1
@@ -353,11 +358,10 @@ public final class DGKKeyPairGenerator extends KeyPairGeneratorSpi implements Ci
 		{
 			pubKey.run();
 		}
-		
 		System.out.println("FINISHED WITH DGK KEY GENERATION in " + (System.nanoTime() - start_time)/BILLION + " seconds!");
 		return new KeyPair(pubKey, privkey);
 	}
-	
+
 	public String toString()
 	{
 		String s = "";
