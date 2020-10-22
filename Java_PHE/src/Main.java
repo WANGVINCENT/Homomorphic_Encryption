@@ -240,7 +240,7 @@ public class Main
 		for(int i = 0; i < low.length;i++)
 		{
 			toSort[i] = NTL.generateXBitRandom(9);
-			t.add(ElGamalCipher.encrypt(e_pk, toSort[i]));
+			t.add(ElGamalCipher.encrypt(toSort[i], e_pk));
 		}
 		if(e_pk.ADDITIVE)
 		{
@@ -480,41 +480,41 @@ public class Main
 		{
 			System.out.println("ElGamal Secure Addition/Subtraction");
 			// Addition
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("400")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("1000")));
+			Niu.addition(ElGamalCipher.encrypt(new BigInteger("100"), e_pk), ElGamalCipher.encrypt(new BigInteger("100"), e_pk));
+			Niu.addition(ElGamalCipher.encrypt(new BigInteger("400"), e_pk), ElGamalCipher.encrypt(new BigInteger("400"), e_pk));
+			Niu.addition(ElGamalCipher.encrypt(new BigInteger("1000"), e_pk), ElGamalCipher.encrypt(new BigInteger("1000"), e_pk));
 			// Subtract
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("400")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
-			Niu.addition(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), ElGamalCipher.encrypt(e_pk, new BigInteger("100")));
+			Niu.addition(ElGamalCipher.encrypt(new BigInteger("100"), e_pk), ElGamalCipher.encrypt(new BigInteger("100"), e_pk));
+			Niu.addition(ElGamalCipher.encrypt(new BigInteger("400"), e_pk), ElGamalCipher.encrypt(new BigInteger("100"), e_pk));
+			Niu.addition(ElGamalCipher.encrypt(new BigInteger("1000"), e_pk), ElGamalCipher.encrypt(new BigInteger("100"), e_pk));
 			return;
 		}
 		System.out.println("Multiplication Tests...ElGamal");
 		// Check the multiplication, ElGamal
-		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("100")), 
-				ElGamalCipher.encrypt(e_pk, new BigInteger("2")));
-		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), 
-				ElGamalCipher.encrypt(e_pk, new BigInteger("3")));
-		Niu.multiplication(ElGamalCipher.encrypt(e_pk, new BigInteger("1000")), 
-				ElGamalCipher.encrypt(e_pk, new BigInteger("50")));
+		Niu.multiplication(ElGamalCipher.encrypt(new BigInteger("100"), e_pk), 
+				ElGamalCipher.encrypt(new BigInteger("2"), e_pk));
+		Niu.multiplication(ElGamalCipher.encrypt(new BigInteger("1000"), e_pk), 
+				ElGamalCipher.encrypt(new BigInteger("3"), e_pk));
+		Niu.multiplication(ElGamalCipher.encrypt(new BigInteger("1000"), e_pk), 
+				ElGamalCipher.encrypt(new BigInteger("50"), e_pk));
 
 		System.out.println("Division Tests...ElGamal");
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 2);//100/2 = 50
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 3);//100/3 = 33
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 4);//100/4 = 25
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 5);//100/5 = 20
-		Niu.division(ElGamalCipher.encrypt(e_pk, 100), 25);//100/25 = 4
+		Niu.division(ElGamalCipher.encrypt(100, e_pk), 2);//100/2 = 50
+		Niu.division(ElGamalCipher.encrypt(100, e_pk), 3);//100/3 = 33
+		Niu.division(ElGamalCipher.encrypt(100, e_pk), 4);//100/4 = 25
+		Niu.division(ElGamalCipher.encrypt(100, e_pk), 5);//100/5 = 20
+		Niu.division(ElGamalCipher.encrypt(100, e_pk), 25);//100/25 = 4
 
 		// ElGamal
 		System.out.println("Protocol 4 Tests...ElGamal");
 		for (int i = 0; i < low.length;i++)
 		{
-			System.out.println(!Niu.Protocol4(ElGamalCipher.encrypt(e_pk, low[i]), 
-					ElGamalCipher.encrypt(e_pk, mid[i])));
-			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(e_pk, mid[i]), 
-					ElGamalCipher.encrypt(e_pk, mid[i])));
-			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(e_pk, high[i]), 
-					ElGamalCipher.encrypt(e_pk, mid[i])));
+			System.out.println(!Niu.Protocol4(ElGamalCipher.encrypt(low[i], e_pk), 
+					ElGamalCipher.encrypt(mid[i], e_pk)));
+			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(mid[i], e_pk), 
+					ElGamalCipher.encrypt(mid[i], e_pk)));
+			System.out.println(Niu.Protocol4(ElGamalCipher.encrypt(high[i], e_pk), 
+					ElGamalCipher.encrypt(mid[i], e_pk)));
 		}
 	}
 
@@ -767,8 +767,8 @@ public class Main
 		System.out.println("y : " + _y);
 		System.out.println("a : " + a);
 		System.out.println("u : " + CipherConstants.FIELD_SIZE);
-		ElGamal_Ciphertext x = ElGamalCipher.encrypt(e_pk, _x);
-		ElGamal_Ciphertext y = ElGamalCipher.encrypt(e_pk, _y);
+		ElGamal_Ciphertext x = ElGamalCipher.encrypt(_x, e_pk);
+		ElGamal_Ciphertext y = ElGamalCipher.encrypt(_y, e_pk);
 		
 		if(!e_pk.ADDITIVE)
 		{
@@ -1104,9 +1104,9 @@ public class Main
 	{
 		System.out.println("-----------EL-GAMAL TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
 
-		ElGamal_Ciphertext base = ElGamalCipher.encrypt(e_pk, NTL.generateXBitRandom(15));
+		ElGamal_Ciphertext base = ElGamalCipher.encrypt(NTL.generateXBitRandom(15), e_pk);
 		BigInteger t = NTL.generateXBitRandom(15);
-		ElGamal_Ciphertext temp = ElGamalCipher.encrypt(e_pk, t);
+		ElGamal_Ciphertext temp = ElGamalCipher.encrypt(t, e_pk);
 		
 		long start = 0;
 		
@@ -1130,14 +1130,14 @@ public class Main
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{	
-			ElGamalCipher.encrypt(e_pk, t);
+			ElGamalCipher.encrypt(t, e_pk);
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
-			ElGamalCipher.decrypt(e_sk, temp);
+			ElGamalCipher.decrypt(temp, e_sk);
 		}
 		System.out.println("Time to complete decryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 		

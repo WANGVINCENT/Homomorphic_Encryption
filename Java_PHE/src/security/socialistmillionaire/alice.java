@@ -976,7 +976,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		 * [[x + 2^l + r]]
 		 * [[z]] = [[x - y + 2^l + r]]
 		 */
-		z = ElGamalCipher.add(x, ElGamalCipher.encrypt(e_pk, r.add(powL)), e_pk);
+		z = ElGamalCipher.add(x, ElGamalCipher.encrypt(r.add(powL), e_pk), e_pk);
 		z = ElGamalCipher.subtract(z, y, e_pk);
 		toBob.writeObject(z);
 		toBob.flush();
@@ -1049,21 +1049,21 @@ public final class alice extends socialist_millionaires implements Runnable
 		// Step 6: Compute [[beta <= alpha]]
 		if(deltaA == 1)
 		{
-			alpha_lt_beta = ElGamalCipher.encrypt(e_pk, deltaB);
+			alpha_lt_beta = ElGamalCipher.encrypt(deltaB, e_pk);
 		}
 		else
 		{
-			alpha_lt_beta = ElGamalCipher.encrypt(e_pk, 1 - deltaB);
+			alpha_lt_beta = ElGamalCipher.encrypt(1 - deltaB, e_pk);
 		}
 
 		// Step 7: Compute [[x <= y]]
 		if(r.compareTo(N.subtract(BigInteger.ONE).divide(TWO)) == -1)
 		{
-			result = ElGamalCipher.subtract(zeta_one, ElGamalCipher.encrypt(e_pk, r.divide(powL)), e_pk);
+			result = ElGamalCipher.subtract(zeta_one, ElGamalCipher.encrypt(r.divide(powL), e_pk), e_pk);
 		}
 		else
 		{
-			result = ElGamalCipher.subtract(zeta_two, ElGamalCipher.encrypt(e_pk, r.divide(powL)), e_pk);
+			result = ElGamalCipher.subtract(zeta_two, ElGamalCipher.encrypt(r.divide(powL), e_pk), e_pk);
 		}
 		result = ElGamalCipher.subtract(result, alpha_lt_beta, e_pk);
 		
@@ -1224,7 +1224,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		ElGamal_Ciphertext x_prime = null;
 		ElGamal_Ciphertext y_prime = null;
 		BigInteger plain_a = NTL.RandomBnd(pubKey.getU());
-		ElGamal_Ciphertext a = ElGamalCipher.encrypt(e_pk, plain_a);
+		ElGamal_Ciphertext a = ElGamalCipher.encrypt(plain_a, e_pk);
 		ElGamal_Ciphertext result = null;
 
 		// Step 1
@@ -1318,7 +1318,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	{
 		if(!e_pk.ADDITIVE)
 		{
-			return ElGamalCipher.divide(x, ElGamalCipher.encrypt(e_pk, BigInteger.valueOf(d)), e_pk);
+			return ElGamalCipher.divide(x, ElGamalCipher.encrypt(BigInteger.valueOf(d), e_pk), e_pk);
 		}
 		Object in = null;
 		ElGamal_Ciphertext answer = null;
@@ -1329,7 +1329,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		
 		// Step 1
 		r = NTL.generateXBitRandom(16 - 1);
-		z = ElGamalCipher.add(x, ElGamalCipher.encrypt(e_pk, r), e_pk);
+		z = ElGamalCipher.add(x, ElGamalCipher.encrypt(r, e_pk), e_pk);
 		toBob.writeObject(z);
 		toBob.flush();
 		
@@ -1363,16 +1363,16 @@ public final class alice extends socialist_millionaires implements Runnable
 		// Step 5: Alice computes [x/d]
 		// [[z/d - r/d]]
 		// [[z/d - r/d - t]]
-		answer = ElGamalCipher.subtract(c, ElGamalCipher.encrypt(e_pk, r.divide(BigInteger.valueOf(d))), e_pk);
+		answer = ElGamalCipher.subtract(c, ElGamalCipher.encrypt(r.divide(BigInteger.valueOf(d)), e_pk), e_pk);
 		if(t == 1)
 		{
-			answer = ElGamalCipher.subtract(answer, ElGamalCipher.encrypt(e_pk, t), e_pk);
+			answer = ElGamalCipher.subtract(answer, ElGamalCipher.encrypt(t, e_pk), e_pk);
 		}
 		
 		// Print Answer to verify
 		if (e_sk != null)
 		{
-			System.out.println("answer: " + ElGamalCipher.decrypt(e_sk, answer));	
+			System.out.println("answer: " + ElGamalCipher.decrypt(answer, e_sk));	
 		}
 		return answer;
 	}
@@ -1395,8 +1395,8 @@ public final class alice extends socialist_millionaires implements Runnable
 		// Step 1
 		a = NTL.RandomBnd(N);
 		b = NTL.RandomBnd(N);
-		x_prime = ElGamalCipher.add(x, ElGamalCipher.encrypt(e_pk, a), e_pk);
-		y_prime = ElGamalCipher.add(y, ElGamalCipher.encrypt(e_pk, b), e_pk);
+		x_prime = ElGamalCipher.add(x, ElGamalCipher.encrypt(a, e_pk), e_pk);
+		y_prime = ElGamalCipher.add(y, ElGamalCipher.encrypt(b, e_pk), e_pk);
 		toBob.writeObject(x_prime);
 		toBob.flush();
 		
@@ -1412,7 +1412,7 @@ public final class alice extends socialist_millionaires implements Runnable
 			result = (ElGamal_Ciphertext) in;
 			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply_scalar(x, b, e_pk), e_pk);
 			result = ElGamalCipher.subtract(result, ElGamalCipher.multiply_scalar(y, a, e_pk), e_pk);
-			result = ElGamalCipher.subtract(result, ElGamalCipher.encrypt(e_pk, a.multiply(b)), e_pk);
+			result = ElGamalCipher.subtract(result, ElGamalCipher.encrypt(a.multiply(b), e_pk), e_pk);
 		}
 		else
 		{

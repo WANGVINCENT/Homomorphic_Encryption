@@ -98,7 +98,7 @@ public class ElGamalCipher extends CipherSpi
 		BigInteger m = new BigInteger(input);
 
 		// get the public key in order to encrypt
-		ElGamal_Ciphertext c = encrypt((ElGamalPublicKey) keyElGamal, m);
+		ElGamal_Ciphertext c = encrypt(m, (ElGamalPublicKey) keyElGamal);
 
 		// Convert to bytes!
 		gr = c.gr.toByteArray();
@@ -138,7 +138,7 @@ public class ElGamalCipher extends CipherSpi
 		hrgm = new BigInteger(Arrays.copyOfRange(input, 129, input.length));
 
 		// calculate the message
-		byte [] messageBytes = decrypt((ElGamalPrivateKey) keyElGamal, new ElGamal_Ciphertext(gr, hrgm)).toByteArray();
+		byte [] messageBytes = decrypt(new ElGamal_Ciphertext(gr, hrgm), (ElGamalPrivateKey) keyElGamal).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
 		return plaintextSize;
@@ -360,35 +360,55 @@ public class ElGamalCipher extends CipherSpi
 		int modulusLength = ((ElGamal_Key) key).getP().bitLength();
 		calculateBlockSizes(modulusLength);
 	}
-
-	// --------------------------Relevant ElGamal---------------------------------------
-	public static ElGamal_Ciphertext encrypt(ElGamalPublicKey key, BigInteger message)
+	
+	// ------------------------PUBLIC FACING METHODS---------------------------------------------------
+	public void init(int encryptMode, ElGamalPublicKey pk) 
+			throws InvalidKeyException, InvalidAlgorithmParameterException
 	{
-		if(key.ADDITIVE)
+		engineInit(encryptMode, pk, new SecureRandom());
+	}
+
+	public void init(int decryptMode, ElGamalPrivateKey sk)
+			throws InvalidKeyException, InvalidAlgorithmParameterException 
+	{
+		engineInit(decryptMode, sk, new SecureRandom());
+	}
+
+	public byte[] doFinal(byte[] bytes) 
+			throws BadPaddingException, IllegalBlockSizeException 
+	{
+		byte [] answer = engineDoFinal(bytes, 0, bytes.length);
+		return answer;
+	}
+
+	// --------------------------BigInteger ElGamal---------------------------------------
+	public static ElGamal_Ciphertext encrypt(BigInteger plaintext, ElGamalPublicKey pk)
+	{
+		if(pk.ADDITIVE)
 		{
-			return Encrypt_Homomorph(key, message);
+			return Encrypt_Homomorph(plaintext, pk);
 		}
 		else
 		{
-			return Encrypt(key, message);
+			return Encrypt(plaintext, pk);
 		}
 	}
 
-	public static ElGamal_Ciphertext encrypt(ElGamalPublicKey key, long m)
+	public static ElGamal_Ciphertext encrypt(long plaintext, ElGamalPublicKey pk)
 	{
-		BigInteger message = BigInteger.valueOf(m);
-		return encrypt(key, message);
+		BigInteger message = BigInteger.valueOf(plaintext);
+		return encrypt(message, pk);
 	}
 
-	public static BigInteger decrypt(ElGamalPrivateKey key, ElGamal_Ciphertext gr_mhr)
+	public static BigInteger decrypt(ElGamal_Ciphertext ciphertext, ElGamalPrivateKey sk)
 	{
-		if(key.ADDITIVE)
+		if(sk.ADDITIVE)
 		{
-			return Decrypt_Homomorph(key, gr_mhr);	
+			return Decrypt_Homomorph(ciphertext, sk);	
 		}
 		else
 		{
-			return Decrypt(key, gr_mhr);	
+			return Decrypt(ciphertext, sk);	
 		}
 	}
 
@@ -396,12 +416,12 @@ public class ElGamalCipher extends CipherSpi
 	 * @param (p,g,h) public key
 	 * @param message message	
 	 */
-	private static ElGamal_Ciphertext Encrypt(ElGamalPublicKey Key, BigInteger message)
+	private static ElGamal_Ciphertext Encrypt(BigInteger plaintext, ElGamalPublicKey pk)
 	{
-		BigInteger pPrime = Key.p.subtract(BigInteger.ONE).divide(ElGamalKeyPairGenerator.TWO);
+		BigInteger pPrime = pk.p.subtract(BigInteger.ONE).divide(ElGamalKeyPairGenerator.TWO);
 		BigInteger r = NTL.RandomBnd(pPrime);
-		BigInteger gr = Key.g.modPow(r, Key.p);
-		BigInteger hrgm = message.multiply(Key.h.modPow(r, Key.p)).mod(Key.p);
+		BigInteger gr = pk.g.modPow(r, pk.p);
+		BigInteger hrgm = plaintext.multiply(pk.h.modPow(r, pk.p)).mod(pk.p);
 		// encrypt couple (g^r (mod p), m * h^r (mod p))
 		return new ElGamal_Ciphertext(gr, hrgm);
 	}
@@ -412,14 +432,14 @@ public class ElGamalCipher extends CipherSpi
 	 * @param (p, g, h) public key
 	 * @param message message
 	 */
-	private static ElGamal_Ciphertext Encrypt_Homomorph(ElGamalPublicKey key, BigInteger message) 
+	private static ElGamal_Ciphertext Encrypt_Homomorph(BigInteger plaintext, ElGamalPublicKey pk) 
 	{
-		BigInteger pPrime = key.p.subtract(BigInteger.ONE).divide(ElGamalKeyPairGenerator.TWO);
+		BigInteger pPrime = pk.p.subtract(BigInteger.ONE).divide(ElGamalKeyPairGenerator.TWO);
 		BigInteger r = NTL.RandomBnd(pPrime);
 		// encrypt couple (g^r (mod p), h^r * g^m (mod p))
-		BigInteger hr = key.h.modPow(r, key.p);
-		BigInteger gm = key.g.modPow(message, key.p);
-		return new ElGamal_Ciphertext(key.g.modPow(r, key.p), hr.multiply(gm).mod(key.p));
+		BigInteger hr = pk.h.modPow(r, pk.p);
+		BigInteger gm = pk.g.modPow(plaintext, pk.p);
+		return new ElGamal_Ciphertext(pk.g.modPow(r, pk.p), hr.multiply(gm).mod(pk.p));
 	}
 
 	/*
@@ -429,10 +449,10 @@ public class ElGamalCipher extends CipherSpi
 	 * @param (gr, mhr) = (g^r, m * h^r)
 	 * @return the decrypted message
 	 */
-	private static BigInteger Decrypt(ElGamalPrivateKey key, ElGamal_Ciphertext c)
+	private static BigInteger Decrypt(ElGamal_Ciphertext ciphertext, ElGamalPrivateKey sk)
 	{
-		BigInteger hr = c.gr.modPow(key.x, key.p);
-		return c.hrgm.multiply(hr.modInverse(key.p)).mod(key.p);
+		BigInteger hr = ciphertext.gr.modPow(sk.x, sk.p);
+		return ciphertext.hrgm.multiply(hr.modInverse(sk.p)).mod(sk.p);
 	}
 
 	/*
@@ -440,20 +460,20 @@ public class ElGamalCipher extends CipherSpi
 	 * @param (gr, mhr) = (g^r, h^r * g^m)
 	 * @return the decrypted message
 	 */
-	private static BigInteger Decrypt_Homomorph(ElGamalPrivateKey key, ElGamal_Ciphertext c) 
+	private static BigInteger Decrypt_Homomorph(ElGamal_Ciphertext ciphertext, ElGamalPrivateKey sk) 
 	{
 		// h^r (mod p) = g^{r * x} (mod p)
-		BigInteger hr = c.gr.modPow(key.x, key.p);
+		BigInteger hr = ciphertext.gr.modPow(sk.x, sk.p);
 		// g^m = (h^r * g^m) * (h^r)-1 (mod p) = g^m (mod p)
-		BigInteger gm = c.hrgm.multiply(hr.modInverse(key.p)).mod(key.p);
-		BigInteger m = key.LUT.get(gm);
+		BigInteger gm = ciphertext.hrgm.multiply(hr.modInverse(sk.p)).mod(sk.p);
+		BigInteger m = sk.LUT.get(gm);
 
 		if (m != null)
 		{
 			// If I get this, there is a chance I might have a negative number to make?
-			if(m.compareTo(key.p.subtract(BigInteger.ONE)) >= 0)
+			if(m.compareTo(sk.p.subtract(BigInteger.ONE)) >= 0)
 			{
-				m = m.mod(key.p.subtract(BigInteger.ONE));
+				m = m.mod(sk.p.subtract(BigInteger.ONE));
 				if (m.compareTo(CipherConstants.FIELD_SIZE) == 1)
 				{
 					m = m.mod(CipherConstants.FIELD_SIZE);	
@@ -560,7 +580,7 @@ public class ElGamalCipher extends CipherSpi
 		{
 			return null;
 		}
-		ElGamal_Ciphertext sum = ElGamalCipher.encrypt(pk, BigInteger.ZERO);
+		ElGamal_Ciphertext sum = ElGamalCipher.encrypt(BigInteger.ZERO, pk);
 		if (limit <= 0)
 		{
 			return sum;
@@ -588,7 +608,7 @@ public class ElGamalCipher extends CipherSpi
 		{
 			return null;
 		}
-		ElGamal_Ciphertext sum = ElGamalCipher.encrypt(pk, BigInteger.ZERO);
+		ElGamal_Ciphertext sum = ElGamalCipher.encrypt(BigInteger.ZERO, pk);
 		if (limit <= 0)
 		{
 			return sum;
@@ -610,7 +630,7 @@ public class ElGamalCipher extends CipherSpi
 		return sum;
 	}
 
-	public static ElGamal_Ciphertext sum_product (ElGamalPublicKey pk, List<ElGamal_Ciphertext> cipher, List<Long> plain)
+	public static ElGamal_Ciphertext sum_product (List<ElGamal_Ciphertext> cipher, List<Long> plain, ElGamalPublicKey pk)
 	{
 		if(!pk.ADDITIVE)
 		{
@@ -629,7 +649,7 @@ public class ElGamalCipher extends CipherSpi
 		return ElGamalCipher.sum(product_vector, pk, product_vector.length);
 	}
 
-	public static ElGamal_Ciphertext sum_product (ElGamalPublicKey pk, List<ElGamal_Ciphertext> cipher, Long [] plain)
+	public static ElGamal_Ciphertext sum_product (List<ElGamal_Ciphertext> cipher, Long [] plain, ElGamalPublicKey pk)
 	{
 		if(!pk.ADDITIVE)
 		{
@@ -646,24 +666,5 @@ public class ElGamalCipher extends CipherSpi
 			product_vector[i] = ElGamalCipher.multiply_scalar(cipher.get(i), plain[i], pk);
 		}
 		return ElGamalCipher.sum(product_vector, pk, product_vector.length);
-	}
-	// ------------------------PUBLIC FACING METHODS---------------------------------------------------
-	public void init(int encryptMode, ElGamalPublicKey pk) 
-			throws InvalidKeyException, InvalidAlgorithmParameterException
-	{
-		engineInit(encryptMode, pk, new SecureRandom());
-	}
-
-	public void init(int decryptMode, ElGamalPrivateKey sk)
-			throws InvalidKeyException, InvalidAlgorithmParameterException 
-	{
-		engineInit(decryptMode, sk, new SecureRandom());
-	}
-
-	public byte[] doFinal(byte[] bytes) 
-			throws BadPaddingException, IllegalBlockSizeException 
-	{
-		byte [] answer = engineDoFinal(bytes, 0, bytes.length);
-		return answer;
 	}
 }

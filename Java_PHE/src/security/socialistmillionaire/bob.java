@@ -689,7 +689,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			throw new IllegalArgumentException("Protocol 4: No ElGamal_Ciphertext found! " + x.getClass().getName());
 		}
-		z = ElGamalCipher.decrypt(e_sk, enc_z);
+		z = ElGamalCipher.decrypt(enc_z, e_sk);
 		
 		// Step 2: compute Beta = z (mod 2^l), 
 		beta = NTL.POSMOD(z, powL);
@@ -708,14 +708,14 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		
 		//Step 5" Send [[z/2^l]], Alice has the solution from Protocol 3 already..
-		zeta_one = ElGamalCipher.encrypt(e_pk, z.divide(powL));
+		zeta_one = ElGamalCipher.encrypt(z.divide(powL), e_pk);
 		if(z.compareTo(N.subtract(BigInteger.ONE).divide(TWO)) == -1)
 		{
-			zeta_two = ElGamalCipher.encrypt(e_pk, z.add(N).divide(powL));
+			zeta_two = ElGamalCipher.encrypt(z.add(N).divide(powL), e_pk);
 		}
 		else
 		{
-			zeta_two = ElGamalCipher.encrypt(e_pk, z.divide(powL));
+			zeta_two = ElGamalCipher.encrypt(z.divide(powL), e_pk);
 		}
 		toAlice.writeObject(zeta_one);
 		toAlice.writeObject(zeta_two);
@@ -726,7 +726,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		x = fromAlice.readObject();
 		if (x instanceof ElGamal_Ciphertext)
 		{
-			answer = ElGamalCipher.decrypt(e_sk, (ElGamal_Ciphertext) x).intValue();
+			answer = ElGamalCipher.decrypt((ElGamal_Ciphertext) x, e_sk).intValue();
 			toAlice.writeInt(answer);
 			toAlice.flush();
 		}
@@ -769,15 +769,15 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		
 		// Step 3
-		x_prime = ElGamalCipher.decrypt(e_sk, enc_x_prime);
-		y_prime = ElGamalCipher.decrypt(e_sk, enc_y_prime);
+		x_prime = ElGamalCipher.decrypt(enc_x_prime, e_sk);
+		y_prime = ElGamalCipher.decrypt(enc_y_prime, e_sk);
 		if(addition)
 		{
-			toAlice.writeObject(ElGamalCipher.encrypt(e_pk, x_prime.add(y_prime)));	
+			toAlice.writeObject(ElGamalCipher.encrypt(x_prime.add(y_prime), e_pk));	
 		}
 		else
 		{
-			toAlice.writeObject(ElGamalCipher.encrypt(e_pk, x_prime.subtract(y_prime)));
+			toAlice.writeObject(ElGamalCipher.encrypt(x_prime.subtract(y_prime), e_pk));
 		}
 		toAlice.flush();
 	}
@@ -798,14 +798,14 @@ public final class bob extends socialist_millionaires implements Runnable
 			throw new IllegalArgumentException("Divison: No ElGamal Ciphertext found! " + alice.getClass().getName());
 		}
 	
-		z = ElGamalCipher.decrypt(e_sk, enc_z);
+		z = ElGamalCipher.decrypt(enc_z, e_sk);
 		if(!FAST_DIVIDE)
 		{
 			Protocol3(z.mod(BigInteger.valueOf(divisor)));
 		}
 		
 		c = z.divide(BigInteger.valueOf(divisor));
-		toAlice.writeObject(ElGamalCipher.encrypt(e_pk, c));
+		toAlice.writeObject(ElGamalCipher.encrypt(c, e_pk));
 		toAlice.flush();
 		/*
 		 *  Unlike Comparison, it is decided Bob shouldn't know the answer.
@@ -847,9 +847,9 @@ public final class bob extends socialist_millionaires implements Runnable
 		}
 		
 		// Step 3
-		x_prime = ElGamalCipher.decrypt(e_sk, enc_x_prime);
-		y_prime = ElGamalCipher.decrypt(e_sk, enc_y_prime);
-		toAlice.writeObject(ElGamalCipher.encrypt(e_pk, x_prime.multiply(y_prime)));
+		x_prime = ElGamalCipher.decrypt(enc_x_prime, e_sk);
+		y_prime = ElGamalCipher.decrypt(enc_y_prime, e_sk);
+		toAlice.writeObject(ElGamalCipher.encrypt(x_prime.multiply(y_prime), e_pk));
 		toAlice.flush();
 	}
 	
