@@ -12,6 +12,7 @@ import javax.crypto.ShortBufferException;
 import security.DGK.DGKPrivateKey;
 import security.DGK.DGKPublicKey;
 import security.misc.CipherConstants;
+import security.misc.HomomorphicException;
 import security.misc.NTL;
 
 import java.security.AlgorithmParameters;
@@ -23,7 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class DGKOperations extends CipherSpi implements CipherConstants
@@ -78,7 +78,7 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		BigInteger m = new BigInteger(input);
 
 		// get the public key in order to encrypt
-		byte [] cBytes = encrypt((DGKPublicKey) keyDGK, m).toByteArray();
+		byte [] cBytes = encrypt(m, (DGKPublicKey) keyDGK).toByteArray();
 		System.arraycopy(cBytes, 0, output, ciphertextSize - cBytes.length, cBytes.length);
 		return ciphertextSize;
 	}
@@ -107,7 +107,8 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		System.arraycopy(input, inputOffset, cBytes, 0, input.length);
 		
 		// calculate the message
-		byte[] messageBytes = decrypt(new BigInteger(cBytes), (DGKPrivateKey) keyDGK).toByteArray();
+		long dec = decrypt(new BigInteger(cBytes), (DGKPrivateKey) keyDGK);
+		byte [] messageBytes = BigInteger.valueOf(dec).toByteArray();
 		int gatedLength = Math.min(messageBytes.length, plaintextSize);
 		System.arraycopy(messageBytes, 0, output, plaintextSize - gatedLength, gatedLength);
 		return plaintextSize;
@@ -388,23 +389,18 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 	}
 	
 	//--------------------------------Old DGK Operations----------------------------------
-	public static BigInteger encrypt(DGKPublicKey pubKey, BigInteger plaintext)
-	{
-		return encrypt(pubKey, plaintext.longValue());
-	}
-
-	public static BigInteger encrypt(long plaintext, DGKPublicKey pubKey)
-	{
-		return encrypt(pubKey, plaintext);
-	}
 
 	/**
 	 * Encrypt plaintext with DGK Public Key
+	 * Compute ciphertext = g^{m}h^{r} (mod n)
 	 * @param pubKey - use this to encrypt plaintext
 	 * @param plaintext 
 	 * @return - DGK ciphertext
+	 * throws HomomorphicException
+	 * - If the plaintext is larger than the plaintext supported by DGK Public Key,
+	 * an exception will be thrown
 	 */
-	public static BigInteger encrypt(DGKPublicKey pubKey, long plaintext)
+	public static BigInteger encrypt(long plaintext, DGKPublicKey pubKey)
 	{
 		BigInteger ciphertext;
 		if (plaintext < -1)
@@ -434,11 +430,12 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		ciphertext = NTL.POSMOD(firstpart.multiply(secondpart), pubKey.n);
 		return ciphertext;
 	}
-
-	public static BigInteger decrypt(BigInteger ciphertext, DGKPrivateKey privKey)
+	
+	public static BigInteger encrypt(BigInteger plaintext, DGKPublicKey pk)
 	{
-		return BigInteger.valueOf(decrypt(privKey, ciphertext));
+		return encrypt(plaintext.longValue(), pk);
 	}
+	
 	/**
 	 * Compute DGK decryption
 	 * c = g^m * h^r (mod n)
@@ -446,9 +443,11 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 	 * Use the pre-computed hashmap to retrieve m.
 	 * @param privKey - used to decrypt ciphertext
 	 * @param ciphertext - DGK ciphertext
-	 * @return
+	 * @return plaintext
+	 * @throws HomomorphicException
+	 * 	- If the ciphertext is larger than N, an exception will be thrown
 	 */
-	public static long decrypt(DGKPrivateKey privKey, BigInteger ciphertext)
+	public static long decrypt(BigInteger ciphertext, DGKPrivateKey privKey)
 	{
 		if (ciphertext.signum() == -1)
 		{
@@ -469,117 +468,179 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		}
 		return plain;
 	}
-
+	
 	/**
-	 * Compute DGK encryped sum. 
-	 * [a] * [b] = [a + b] 
-	 * @param pubKey - DGK public key used to encrypt DGK ciphertext a and b.
-	 * @param a - DGK ciphertext
-	 * @param b - DGK ciphertext
-	 * @return - DGK Encrypted sum of a and b
+	 * returns the sum of the Paillier encrypted values
+	 * Note: The result is still encrypted
+	 * Warning: If the sum exceeds N, it is subject to N
+	 * @param ciphertext1 - Encrypted Paillier value
+	 * @param ciphertext2 - Encrypted Paillier value
+	 * @param pk - used to encrypt both ciphertexts
+	 * @return
+	 * @throws HomomorphicException
+	 * 	- If either ciphertext is greater than N or negative, throw an exception
 	 */
-	public static BigInteger add(DGKPublicKey pubKey, BigInteger a, BigInteger b)
+	public static BigInteger add(BigInteger ciphertext1, BigInteger ciphertext2, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		if (a.signum() ==-1 || a.compareTo(pubKey.n) == 1)
+		if (ciphertext1.signum() ==-1 || ciphertext1.compareTo(pk.n) == 1)
 		{
-			throw new IllegalArgumentException("DGKAdd Invalid Parameter a: at least one of the ciphertext is not in Zn: " + a);
+			throw new HomomorphicException("DGKAdd Invalid Parameter ciphertext1: " + ciphertext1);
 		}
-		else if (b.signum() ==-1 || b.compareTo(pubKey.n) == 1)
+		else if (ciphertext2.signum() ==-1 || ciphertext2.compareTo(pk.n) == 1)
 		{
-			throw new IllegalArgumentException("DGKAdd Invalid Parameter b: at least one of the ciphertext is not in Zn: " + b);
+			throw new HomomorphicException("DGKAdd Invalid Parameter ciphertext2: " + ciphertext2);
 		}
-		return a.multiply(b).mod(pubKey.n);
+		return ciphertext1.multiply(ciphertext2).mod(pk.n);
 	}
 	
-	//[a] * [b] = [a * b]
-	public static BigInteger add_plaintext(DGKPublicKey pubKey, BigInteger a, BigInteger plaintext)
+	
+	/**
+	 * returns the sum of the DGK encrypted value and plaintext value
+	 * Warning: If the sum exceeds u, it is subject to mod u
+	 * @param ciphertext - DGK encrypted value
+	 * @param plaintext
+	 * @param pk - was used to encrypt ciphertext
+	 * @return Encrypted sum of ciphertext and plaintext
+	 * @throws HomomorphicException 
+	 * - If a ciphertext is negative or exceeds N or plaintext is negative or exceeds u
+	 */
+	public static BigInteger add_plaintext(BigInteger ciphertext, BigInteger plaintext, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		if (a.signum() ==-1 || a.compareTo(pubKey.n) == 1)
+		if (ciphertext.signum() ==-1 || ciphertext.compareTo(pk.n) == 1)
 		{
-			throw new IllegalArgumentException("DGKAdd Invalid Parameter a: at least one of the ciphertext is not in Zn: " + a);
+			throw new HomomorphicException("DGK add_plaintext Invalid Parameter ciphertext: " + ciphertext);
 		}
 		// will accept plaintext -1 because of Protocol 1 and Modified Protocol 3 need it
-		else if (plaintext.compareTo(NEG_ONE) == -1 || plaintext.compareTo(pubKey.bigU) == 1)
+		else if (plaintext.compareTo(NEG_ONE) == -1 || plaintext.compareTo(pk.bigU) == 1)
 		{
-			throw new IllegalArgumentException("DGKAdd Invalid Parameter b: at least one of the ciphertext is not in Zn: " + plaintext);		
+			throw new HomomorphicException("DGK  add_plaintext Invalid Parameter plaintext: " + plaintext);		
 		}
-		return a.multiply(pubKey.g.modPow(plaintext, pubKey.n)).mod(pubKey.n);
+		return ciphertext.multiply(pk.g.modPow(plaintext, pk.n)).mod(pk.n);
 	}
 	
-	public static BigInteger add_plaintext(DGKPublicKey pubKey, BigInteger a, long plaintext)
+	public static BigInteger add_plaintext(BigInteger ciphertext, long plaintext, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		return add_plaintext(pubKey, a, BigInteger.valueOf(plaintext));
+		return add_plaintext(ciphertext, BigInteger.valueOf(plaintext), pk);
 	}
 
-	// [a]/[b] = [a - b]
-	public static BigInteger subtract(DGKPublicKey pubKey, BigInteger a, BigInteger b)
+	/**
+	 * Subtract ciphertext1 and ciphertext 2
+	 * @param ciphertext1 - DGK ciphertext
+	 * @param ciphertext2 - DGK ciphertext
+	 * @param pk - used to encrypt both ciphertexts
+	 * @return DGK encrypted ciphertext with ciphertext1 - ciphertext2
+	 * @throws HomomorphicException 
+	 */
+	public static BigInteger subtract(BigInteger a, BigInteger b, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		BigInteger minus_b = multiply(pubKey, b, pubKey.u - 1);
-		return add(pubKey, a, minus_b);
+		BigInteger minus_b = multiply(b, pk.u - 1, pk);
+		return add(a, minus_b, pk);
+	}
+	
+	/**
+	 * Computes encrypted DGK value of the cipher-text subtractred by the plaintext
+	 * Warning: If the difference goes negative, add u.
+	 * @param ciphertext - Encrypted DGK value
+	 * @param plaintext 
+	 * @param pk - used to encrypt ciphertext
+	 * @return DGK encrypted ciphertext with ciphertext1 - ciphertext2
+	 */
+	public static BigInteger subtract_plaintext(BigInteger ciphertext, BigInteger plaintext, DGKPublicKey pk)
+	{
+		BigInteger new_ciphertext = ciphertext.divide(pk.g.modPow(plaintext, pk.n)).mod(pk.n);
+		return new_ciphertext;
 	}
 
-	// cipher a * Plain text
-	public static BigInteger multiply(DGKPublicKey pubKey, BigInteger cipher, long plaintext)
+	/**
+	 * Compute the DGK encrypted value of ciphertext multiplied by the plaintext.
+	 * @param ciphertext - DGK encrypted value
+	 * @param scalar - plaintext value
+	 * @param pk - DGK Public key the encrypted ciphertext
+	 * @return
+	 * @throws HomomorphicException 
+	 * If ciphertext is negative or exceeds N or plaintext exceeds u
+	 */
+	
+	public static BigInteger multiply(BigInteger ciphertext, BigInteger plaintext, DGKPublicKey pk) throws HomomorphicException
 	{
-		return multiply(pubKey, cipher, BigInteger.valueOf(plaintext));
+		if (ciphertext.signum() == -1 || ciphertext.compareTo(pk.n) == 1)
+		{
+			throw new HomomorphicException("DGKMultiply Invalid Parameter ciphertext: " + ciphertext);
+		}
+		if(plaintext.compareTo(pk.bigU) == 1)
+		{
+			throw new HomomorphicException("DGKMultiply Invalid Parameter plaintext: " + plaintext);
+		}
+		return ciphertext.modPow(plaintext, pk.n);
+	}
+	
+	public static BigInteger multiply(BigInteger cipher, long plaintext, DGKPublicKey pk) 
+			throws HomomorphicException
+	{
+		return multiply(cipher, BigInteger.valueOf(plaintext), pk);
 	}
 
-	public static BigInteger multiply(DGKPublicKey pubKey, BigInteger cipher, BigInteger plaintext)
+	/**
+	 * Compute the division of the DGK cipher-text and a plaintext.
+	 * Warning: Divide will only work correctly on perfect divisor like 2|20, it will work.
+	 * If you try 3|20, it will NOT work and you will get a wrong answer!
+	 * If you want to do 3|20, you MUST use a division protocol from Veugen paper
+	 * @param ciphertext - DGK ciphertext
+	 * @param divisor - plaintext value
+	 * @param pk - was used to encrypt ciphertext
+	 * @return Encrypted DGK value equal to ciphertext/plaintext
+	 * @throws HomomorphicException 
+	 */
+	
+	public static BigInteger divide(BigInteger ciphertext, BigInteger plaintext, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		if (cipher.signum() == -1)
-		{
-			throw new IllegalArgumentException("DGKMultiply Invalid Parameter: the ciphertext is not in Zn: " + cipher);
-		}
-		else if(cipher.compareTo(pubKey.n) == 1)
-		{
-			throw new IllegalArgumentException("DGKMultiply Invalid Parameter: the ciphertext is not in Zn: " + cipher);
-		}
-		if(plaintext.compareTo(pubKey.bigU) == 1)
-		{
-			throw new IllegalArgumentException("DGKMultiply Invalid Parameter:  the plaintext is not in Zu: " + pubKey.bigU);
-		}
-		return cipher.modPow(plaintext, pubKey.n);
+		return multiply(ciphertext, plaintext.modInverse(pk.n), pk);
 	}
 
-	public static BigInteger divide(DGKPublicKey pubKey, BigInteger cipher, BigInteger plaintext)
+	public static BigInteger divide(BigInteger ciphertext, long plaintext, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		if (cipher.signum() == -1)
-		{
-			throw new IllegalArgumentException("DGKDivide Invalid Parameter: the ciphertext is not in Zn: " + cipher);
-		}
-		else if(cipher.compareTo(pubKey.n) == 1)
-		{
-			throw new IllegalArgumentException("DGKDivide Invalid Parameter: the ciphertext is not in Zn: " + cipher);
-		}
-		if(plaintext.compareTo(pubKey.bigU) == 1)
-		{
-			throw new IllegalArgumentException("DGKDivide Invalid Parameter: the plaintext is not in Zu: " + pubKey.bigU);
-		}
-		//[x]^(d^{-1})
-		return cipher.modPow(plaintext.modInverse(pubKey.n), pubKey.n);
+		return divide(ciphertext, BigInteger.valueOf(plaintext), pk);
 	}
 
-	public static BigInteger divide(DGKPublicKey pubKey, BigInteger cipher, long plaintext)
+	/**
+	 * Compute the sum of the encrypted DGK values
+	 * @param values - Array of Encrypted DGK values 
+	 * @param pk - DGKPublicKey used to encrypt all the values
+	 * @return
+	 * @throws HomomorphicException
+	 */
+	public static BigInteger sum (BigInteger [] parts, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		return divide(pubKey, cipher, BigInteger.valueOf(plaintext));
-	}
-
-	public static BigInteger sum (DGKPublicKey pubKey, BigInteger [] parts)
-	{
-		BigInteger sum = DGKOperations.encrypt(pubKey, 0);
+		BigInteger sum = DGKOperations.encrypt(0, pk);
 		for (int i = 0; i < parts.length; i++)
 		{
-			sum = add(pubKey, sum, parts[i]);
+			sum = add(sum, parts[i], pk);
 		}
 		return sum;
 	}
 
-	public static BigInteger sum (DGKPublicKey pubKey, BigInteger [] parts, int limit)
+	/**
+	 * Compute the sum of the encrypted DGK values
+	 * @param values - Array of Encrypted DGK values
+	 * @param pk - DGKPublicKey used to  encrypted the values
+	 * @param limit - Sum values up to this index value in the list
+	 * @return
+	 * @throws HomomorphicException
+	 */
+	public static BigInteger sum (BigInteger [] values, DGKPublicKey pk, int limit) 
+			throws HomomorphicException
 	{
-		BigInteger sum = DGKOperations.encrypt(pubKey, 0);
-		if (limit > parts.length)
+		BigInteger sum = DGKOperations.encrypt(0, pk);
+		if (limit > values.length)
 		{
-			return sum(pubKey, parts);
+			return sum(values, pk);
 		}
 		else if(limit <= 0)
 		{
@@ -587,27 +648,45 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		}
 		for (int i = 0; i < limit; i++)
 		{
-			sum = add(pubKey, sum, parts[i]);
+			sum = add(sum, values[i], pk);
 		}
 		return sum;
 	}
 	
-	public static BigInteger sum (DGKPublicKey pubKey, List<BigInteger> parts)
+	/**
+	 * Compute the sum of the encrypted DGK values
+	 * @param values - List of Encrypted DGK values
+	 * @param pk - DGKPublicKey used to  encrypted the values
+	 * @param limit - Sum values up to this index value in the list
+	 * @return
+	 * @throws HomomorphicException
+	 */
+	public static BigInteger sum (List<BigInteger> values, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		BigInteger sum = DGKOperations.encrypt(pubKey, 0);
-		for (int i = 0; i < parts.size(); i++)
+		BigInteger sum = DGKOperations.encrypt(0, pk);
+		for (int i = 0; i < values.size(); i++)
 		{
-			sum = add(pubKey, sum, parts.get(i));
+			sum = add(sum, values.get(i), pk);
 		}
 		return sum;
 	}
-
-	public static BigInteger sum (DGKPublicKey pubKey, List<BigInteger> parts, int limit)
+	
+	/**
+	 * Compute the sum of the encrypted DGK values
+	 * @param values - List of Encrypted DGK values
+	 * @param pk - DGKPublicKey used to  encrypted the values
+	 * @param limit - Sum values up to this index value in the list
+	 * @return
+	 * @throws HomomorphicException
+	 */
+	public static BigInteger sum (List<BigInteger> values, DGKPublicKey pk, int limit) 
+			throws HomomorphicException
 	{
-		BigInteger sum = DGKOperations.encrypt(pubKey, 0);
-		if (limit > parts.size())
+		BigInteger sum = DGKOperations.encrypt(0, pk);
+		if (limit > values.size())
 		{
-			return sum(pubKey, parts);
+			return sum(values, pk);
 		}
 		else if(limit <= 0)
 		{
@@ -615,38 +694,65 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		}
 		for (int i = 0; i < limit; i++)
 		{
-			sum = add(pubKey, sum, parts.get(i));
+			sum = add(sum, values.get(i), pk);
 		}
 		return sum;
 	}
 	
-	public static BigInteger sum_product (DGKPublicKey pubKey, List<BigInteger> cipher, List<Long> plain)
+	/**
+	 * Compute the sum-product. It computes the scalar multiplication between
+	 * the array of Encrypted and plaintext values.
+	 * Then it computes the encrypted sum.
+	 * @param cipher - List of ciphertext
+	 * @param plain - List of plaintext
+	 * @param pk - DGK Public Key used to encrypt list of ciphertext
+	 * @return DGK Encrypted sum product
+	 * @throws HomomorphicException
+	 */
+	public static BigInteger sum_product (List<BigInteger> ciphertext, List<Long> plaintext, DGKPublicKey pk) 
+			throws HomomorphicException
 	{
-		if(cipher.size() != plain.size())
+		if(ciphertext.size() != plaintext.size())
 		{
-			throw new IllegalArgumentException("Arrays are NOT the same size!");
+			throw new HomomorphicException("Lists are NOT the same size!");
 		}
-		
-		BigInteger [] product_vector = new BigInteger[cipher.size()];
-		for (int i = 0; i < product_vector.length; i++)
+		BigInteger sum = DGKOperations.encrypt(0, pk);
+		BigInteger temp = null;
+		for (int i = 0; i < ciphertext.size(); i++)
 		{
-			product_vector[i] = DGKOperations.multiply(pubKey, cipher.get(i), plain.get(i));
+			temp = DGKOperations.multiply(ciphertext.get(i), plaintext.get(i), pk);
+			sum = DGKOperations.add(temp, sum, pk);
 		}
-		return sum(pubKey, product_vector);
+		return sum;
 	}
 	
-	public static BigInteger sum_product (DGKPublicKey pubKey, BigInteger[] cipher, Long [] plain)
+	/**
+	 * Compute the sum-product. It computes the scalar multiplication between
+	 * the array of Encrypted and plaintext values.
+	 * Then it computes the encrypted sum.
+	 * @param pk - DGK Public Key used to encrypt values in cipher-text list
+	 * @param cipher - Array of Encrypted DGK values
+	 * @param plain - Array of plaintext values
+	 * @return DGK Encrypted sum-product
+	 * @throws HomomorphicException
+	 * - If the size of plaintext array and ciphertext array isn't equal
+	 */
+	
+	public static BigInteger sum_product (BigInteger[] ciphertext, Long [] plaintext, DGKPublicKey pk)
+			throws HomomorphicException
 	{
-		if(cipher.length != plain.length)
+		if(ciphertext.length != plaintext.length)
 		{
-			throw new IllegalArgumentException("Arrays are NOT the same size!");
+			throw new HomomorphicException("Arrays are NOT the same size!");
 		}
 		
-		BigInteger [] product_vector = new BigInteger[cipher.length];
-		for (int i = 0; i < product_vector.length; i++)
+		BigInteger sum = DGKOperations.encrypt(0, pk);
+		BigInteger temp = null;
+		for (int i = 0; i < ciphertext.length; i++)
 		{
-			product_vector[i] = DGKOperations.multiply(pubKey, cipher[i], plain[i]);
+			temp = DGKOperations.multiply(ciphertext[i], plaintext[i], pk);
+			sum = DGKOperations.add(temp, sum, pk);
 		}
-		return sum(pubKey, product_vector);
-	}	
+		return sum;
+	}
 }

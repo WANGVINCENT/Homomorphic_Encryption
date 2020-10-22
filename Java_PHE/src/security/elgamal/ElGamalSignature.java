@@ -28,7 +28,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	{
 		if(!(publicKey instanceof ElGamalPublicKey))
 		{
-			throw new InvalidKeyException("Didn't receive DGK Public Key!");
+			throw new InvalidKeyException("Didn't receive ElGamal Public Key!");
 		}
 		pk = (ElGamalPublicKey) publicKey;
 		sk = null;
@@ -84,7 +84,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		}
 		else
 		{
-			ElGamal_Ciphertext sigma = sign(new BigInteger(encoded_hash));
+			ElGamal_Ciphertext sigma = sign(new BigInteger(encoded_hash), sk);
 			r = sigma.getA().toByteArray();
 			s = sigma.getB().toByteArray();
 			// Concat both BigIntegers!
@@ -127,7 +127,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	protected void engineSetParameter(AlgorithmParameterSpec param) 
 			throws InvalidParameterException 
 	{
-
+		
 	}
 
 	protected AlgorithmParameters engineGetParameter() 
@@ -142,7 +142,7 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	 * @param M - plaintext message
 	 * @return - signed message
 	 */
-	public ElGamal_Ciphertext sign(BigInteger M)
+	public ElGamal_Ciphertext sign(BigInteger M, ElGamalPrivateKey sk)
 	{
 		BigInteger p1 = sk.p.subtract(BigInteger.ONE);
 		BigInteger K = null;

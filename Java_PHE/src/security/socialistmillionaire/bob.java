@@ -180,7 +180,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		BigInteger [] EncY = new BigInteger[y.bitLength()];
 		for (int i = 0; i < y.bitLength(); i++)
 		{
-			EncY[i] = DGKOperations.encrypt(pubKey, NTL.bit(y, i));
+			EncY[i] = DGKOperations.encrypt(NTL.bit(y, i), pubKey);
 		}
 		toAlice.writeObject(EncY);
 		toAlice.flush();
@@ -207,7 +207,7 @@ public final class bob extends socialist_millionaires implements Runnable
 
 		for (BigInteger C_i: C)
 		{
-			if (DGKOperations.decrypt(privKey, C_i) == 0)
+			if (DGKOperations.decrypt(C_i, privKey) == 0)
 			{
 				deltaB = 1;
 				break;
@@ -225,7 +225,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		in = fromAlice.readObject();
 		if (in instanceof BigInteger)
 		{
-			return DGKOperations.decrypt((BigInteger) in, privKey).intValue() == 1;
+			return DGKOperations.decrypt((BigInteger) in, privKey) == 1;
 		}
 		else
 		{
@@ -330,13 +330,13 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			if(y.testBit(i))
 			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 1);
+				EncY[i] = DGKOperations.encrypt(1, pubKey);
 			}
 			else
 			{
-				EncY[i] = DGKOperations.encrypt(pubKey, 0);
+				EncY[i] = DGKOperations.encrypt(0, pubKey);
 			}
-			EncY[i] = DGKOperations.encrypt(pubKey, NTL.bit(y, i));
+			EncY[i] = DGKOperations.encrypt(NTL.bit(y, i), pubKey);
 		}
 		toAlice.writeObject(EncY);
 		toAlice.flush();
@@ -380,7 +380,7 @@ public final class bob extends socialist_millionaires implements Runnable
 			C = (BigInteger []) x;
 			for (BigInteger C_i: C)
 			{
-				if (DGKOperations.decrypt(privKey, C_i) == 0)
+				if (DGKOperations.decrypt(C_i, privKey) == 0)
 				{
 					deltaB = 1;
 					break;
@@ -415,7 +415,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		x = fromAlice.readObject();
 		if (x instanceof BigInteger)
 		{
-			return DGKOperations.decrypt((BigInteger) x, privKey).intValue() == 1;
+			return DGKOperations.decrypt((BigInteger) x, privKey) == 1;
 		}
 		else
 		{
@@ -475,11 +475,11 @@ public final class bob extends socialist_millionaires implements Runnable
 		// Step A: z < (N - 1)/2
 		if(z.compareTo(N.subtract(BigInteger.ONE).divide(TWO)) == -1)
 		{
-			d = DGKOperations.encrypt(pubKey, BigInteger.ONE);
+			d = DGKOperations.encrypt(1, pubKey);
 		}
 		else
 		{
-			d = DGKOperations.encrypt(pubKey, BigInteger.ZERO);
+			d = DGKOperations.encrypt(0, pubKey);
 		}
 		toAlice.writeObject(d);
 		toAlice.flush();
@@ -489,13 +489,13 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			if(beta.testBit(i))
 			{
-				beta_bits[i] = DGKOperations.encrypt(pubKey, 1);
+				beta_bits[i] = DGKOperations.encrypt(1, pubKey);
 			}
 			else
 			{
-				beta_bits[i] = DGKOperations.encrypt(pubKey, 0);	
+				beta_bits[i] = DGKOperations.encrypt(0, pubKey);	
 			}
-			beta_bits[i] = DGKOperations.encrypt(pubKey, NTL.bit(beta, i));
+			beta_bits[i] = DGKOperations.encrypt(NTL.bit(beta, i), pubKey);
 		}
 		toAlice.writeObject(beta_bits);
 		toAlice.flush();
@@ -532,7 +532,7 @@ public final class bob extends socialist_millionaires implements Runnable
 
 		for (BigInteger C_i: C)
 		{
-			if(DGKOperations.decrypt(privKey, C_i) == 0)
+			if(DGKOperations.decrypt(C_i, privKey) == 0)
 			{
 				deltaB = 1;
 				break;
@@ -545,7 +545,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		in = fromAlice.readObject();
 		if(in instanceof BigInteger)
 		{
-			answer = DGKOperations.decrypt((BigInteger) in, privKey).intValue();
+			answer = (int) DGKOperations.decrypt((BigInteger) in, privKey);
 		}
 		else
 		{
@@ -591,7 +591,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		
 		if(isDGK)
 		{
-			z = BigInteger.valueOf(DGKOperations.decrypt(privKey, z));
+			z = BigInteger.valueOf(DGKOperations.decrypt(z, privKey));
 		}
 		else
 		{
@@ -617,14 +617,14 @@ public final class bob extends socialist_millionaires implements Runnable
 		//Step 5" Send [[z/2^l]], Alice has the solution from Protocol 3 already..
 		if(isDGK)
 		{
-			zeta_one = DGKOperations.encrypt(pubKey, z.divide(powL));
+			zeta_one = DGKOperations.encrypt(z.divide(powL), pubKey);
 			if(z.compareTo(pubKey.getU().subtract(BigInteger.ONE).divide(TWO)) == -1)
 			{
-				zeta_two = DGKOperations.encrypt(pubKey, z.add(pubKey.getU()).divide(powL));
+				zeta_two = DGKOperations.encrypt(z.add(pubKey.getU()).divide(powL), pubKey);
 			}
 			else
 			{
-				zeta_two = DGKOperations.encrypt(pubKey, z.divide(powL));
+				zeta_two = DGKOperations.encrypt(z.divide(powL), pubKey);
 			}
 		}
 		else
@@ -651,7 +651,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		{
 			if(isDGK)
 			{
-				answer = DGKOperations.decrypt((BigInteger) x, privKey).add(BigInteger.ONE).mod(pubKey.getU()).intValue();
+				answer = (int) (DGKOperations.decrypt((BigInteger) x, privKey) + 1 % pubKey.getU().longValue());
 			}
 			else
 			{
@@ -884,10 +884,10 @@ public final class bob extends socialist_millionaires implements Runnable
 		// Step 3
 		if(isDGK)
 		{
-			x_prime = DGKOperations.decrypt(x_prime, privKey);
-			y_prime = DGKOperations.decrypt(y_prime, privKey);
+			x_prime = BigInteger.valueOf(DGKOperations.decrypt(x_prime, privKey));
+			y_prime = BigInteger.valueOf(DGKOperations.decrypt(y_prime, privKey));
 			// To avoid myself throwing errors of encryption must be [0, U), mod it now!
-			toAlice.writeObject(DGKOperations.encrypt(pubKey, x_prime.multiply(y_prime).mod(pubKey.getU())));
+			toAlice.writeObject(DGKOperations.encrypt(x_prime.multiply(y_prime).mod(pubKey.getU()), pubKey));
 		}
 		else
 		{
@@ -916,7 +916,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		
 		if(isDGK)
 		{
-			z = BigInteger.valueOf(DGKOperations.decrypt(privKey, z));
+			z = BigInteger.valueOf(DGKOperations.decrypt(z, privKey));
 		}
 		else
 		{
@@ -933,7 +933,7 @@ public final class bob extends socialist_millionaires implements Runnable
 		c = z.divide(BigInteger.valueOf(divisor));
 		if(isDGK)
 		{
-			toAlice.writeObject(DGKOperations.encrypt(pubKey, c));	
+			toAlice.writeObject(DGKOperations.encrypt(c, pubKey));	
 		}
 		else
 		{

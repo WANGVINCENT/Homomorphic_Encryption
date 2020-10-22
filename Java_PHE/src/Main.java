@@ -232,7 +232,7 @@ public class Main
 		for(int i = 0; i < low.length;i++)
 		{
 			toSort[i] = NTL.generateXBitRandom(9);
-			toSort[i] = DGKOperations.encrypt(pubKey, toSort[i]);
+			toSort[i] = DGKOperations.encrypt(toSort[i], pubKey);
 		}
 		Niu.getKMin(toSort, 3);
 		
@@ -254,12 +254,12 @@ public class Main
 		// Check the multiplication, DGK
 		Niu.setDGKMode(true);
 		System.out.println("Testing Multiplication with DGK");
-		Niu.multiplication(DGKOperations.encrypt(pubKey, new BigInteger("100")), 
-				DGKOperations.encrypt(pubKey, new BigInteger("2")));
-		Niu.multiplication(DGKOperations.encrypt(pubKey, new BigInteger("1000")), 
-				DGKOperations.encrypt(pubKey, new BigInteger("3")));
-		Niu.multiplication(DGKOperations.encrypt(pubKey, new BigInteger("1000")), 
-				DGKOperations.encrypt(pubKey, new BigInteger("5")));
+		Niu.multiplication(DGKOperations.encrypt(new BigInteger("100"), pubKey), 
+				DGKOperations.encrypt(new BigInteger("2"), pubKey));
+		Niu.multiplication(DGKOperations.encrypt(new BigInteger("1000"), pubKey), 
+				DGKOperations.encrypt(new BigInteger("3"), pubKey));
+		Niu.multiplication(DGKOperations.encrypt(new BigInteger("1000"), pubKey), 
+				DGKOperations.encrypt(new BigInteger("5"), pubKey));
 		
 		// Check the multiplication, Paillier
 		Niu.setDGKMode(false);
@@ -358,12 +358,12 @@ public class Main
 		System.out.println("Protocol 4 Tests...DGK");
 		for (int i = 0; i < low.length;i++)
 		{
-			System.out.println(!Niu.Protocol4(DGKOperations.encrypt(pubKey, low[i]), 
-					DGKOperations.encrypt(pubKey, mid[i])));
-			System.out.println(!Niu.Protocol4(DGKOperations.encrypt(pubKey, mid[i]), 
-					DGKOperations.encrypt(pubKey, mid[i])));
-			System.out.println(Niu.Protocol4(DGKOperations.encrypt(pubKey, high[i]), 
-					DGKOperations.encrypt(pubKey, mid[i])));
+			System.out.println(!Niu.Protocol4(DGKOperations.encrypt(low[i], pubKey), 
+					DGKOperations.encrypt(mid[i], pubKey)));
+			System.out.println(!Niu.Protocol4(DGKOperations.encrypt(mid[i], pubKey), 
+					DGKOperations.encrypt(mid[i], pubKey)));
+			System.out.println(Niu.Protocol4(DGKOperations.encrypt(high[i], pubKey), 
+					DGKOperations.encrypt(mid[i], pubKey)));
 		}
 		
 		// Division Test, Paillier
@@ -371,7 +371,7 @@ public class Main
 		Niu.setDGKMode(false);
 		System.out.println("Division Tests...Paillier");
 		BigInteger D = PaillierCipher.encrypt(100, pk);
-		BigInteger d = DGKOperations.encrypt(pubKey, 100);
+		BigInteger d = DGKOperations.encrypt(100, pubKey);
 		
 		Niu.division(D, 2);//100/2 = 50
 		Niu.division(D, 3);//100/3 = 33
@@ -474,7 +474,7 @@ public class Main
 	}
 	
 	//--------------------------Basic demo methods with ElGamal------------------------------------------	
-	public static void alice_demo_ElGamal() throws ClassNotFoundException, IOException
+	public static void alice_demo_ElGamal() throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		if(!e_pk.ADDITIVE)
 		{
@@ -643,8 +643,8 @@ public class Main
 		System.out.println("y: " + y);
 		System.out.println("a: " + a);
 		System.out.println("u: " + pubKey.getU());
-		x = DGKOperations.encrypt(pubKey, x);
-		y = DGKOperations.encrypt(pubKey, y);
+		x = DGKOperations.encrypt(x, pubKey);
+		y = DGKOperations.encrypt(y, pubKey);
 		
 		// MULTIPLICATION
 		start = System.nanoTime();
@@ -756,7 +756,7 @@ public class Main
 	
 	// ------------------------------------ Stress Test Protocol 1 - 4 ElGamal-----------------------------------
 	public static void alice_ElGamal() 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		System.out.println("Start ElGamal Test");
 		long start;
@@ -1037,10 +1037,10 @@ public class Main
 	}
 	
 	
-	public static void DGK_Test() throws InvalidKeyException, SignatureException
+	public static void DGK_Test() throws InvalidKeyException, SignatureException, HomomorphicException
 	{
 		System.out.println("-----------DGK TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
-		BigInteger base = DGKOperations.encrypt(pubKey, NTL.generateXBitRandom(15));
+		BigInteger base = DGKOperations.encrypt(NTL.generateXBitRandom(15), pubKey);
 		BigInteger t = NTL.generateXBitRandom(15);
 		long start = 0;
 		
@@ -1064,11 +1064,11 @@ public class Main
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
-			DGKOperations.encrypt(pubKey, t);
+			DGKOperations.encrypt(t, pubKey);
 		}
 		System.out.println("Time to complete encryption: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	
-		t = DGKOperations.encrypt(pubKey, t);
+		t = DGKOperations.encrypt(t, pubKey);
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
@@ -1079,7 +1079,7 @@ public class Main
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
-			DGKOperations.add(pubKey, t, base);
+			DGKOperations.add(base, t, pubKey);
 		}
 		System.out.println("Time to complete addition: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	
@@ -1087,14 +1087,14 @@ public class Main
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
-			DGKOperations.multiply(pubKey, base, exp);
+			DGKOperations.multiply(base, exp, pubKey);
 		}
 		System.out.println("Time to complete multiplication: " + ((System.nanoTime() - start)/BILLION) + " seconds");
 
 		start = System.nanoTime();
 		for(int i = 0; i < SIZE; i++)
 		{
-			DGKOperations.add_plaintext(pubKey, base, exp);
+			DGKOperations.add_plaintext(base, exp, pubKey);
 		}
 		System.out.println("Time to complete addition (plaintext): " + ((System.nanoTime() - start)/BILLION) + " seconds");
 	}
@@ -1157,7 +1157,7 @@ public class Main
 	}
 	
 	
-	public static void GM_Test()
+	public static void GM_Test() throws HomomorphicException
 	{
 		System.out.println("-----------GM TEST x" + SIZE + "-----------------KEY: " + KEY_SIZE + "-----------");
 		BigInteger t = NTL.generateXBitRandom(15);

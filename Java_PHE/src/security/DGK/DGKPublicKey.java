@@ -54,12 +54,12 @@ public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Run
 
 	public BigInteger ZERO()
 	{
-		return DGKOperations.encrypt(this, 0);
+		return DGKOperations.encrypt(0, this);
 	}
 	
 	public BigInteger ONE()
 	{
-		return DGKOperations.encrypt(this, 1);
+		return DGKOperations.encrypt(1, this);
 	}
 
 	public String getAlgorithm() 

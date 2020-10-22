@@ -86,9 +86,10 @@ public final class alice extends socialist_millionaires implements Runnable
 	 * @throws ClassNotFoundException - Required for casting objects
 	 * @throws IllegalArgumentException - If x or y have more bits 
 	 * than that is supported by the DGK Keys provided
+	 * @throws HomomorphicException 
 	 */
 	public boolean Protocol1(BigInteger x) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, IllegalArgumentException, HomomorphicException
 	{
 		// Constraint...
 		if(x.bitLength() > pubKey.getL())
@@ -135,22 +136,12 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			if (NTL.bit(x, i) == 1)
 			{
-				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);	
+				XOR[i] = DGKOperations.subtract(pubKey.ONE(), Encrypted_Y[i], pubKey);	
 			}
 			else
 			{
 				XOR[i] = Encrypted_Y[i];
 			}
-			/*
-			if(x.testBit(i))
-			{
-				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
-			}
-			else
-			{
-				XOR[i] = Encrypted_Y[i];	
-			}
-			*/
 		}
 
 		// Step 3: Alice picks deltaA and computes s 
@@ -163,10 +154,10 @@ public final class alice extends socialist_millionaires implements Runnable
 
 		for (int i = 0; i < Encrypted_Y.length;i++)
 		{
-			C[i] = DGKOperations.multiply(pubKey, DGKOperations.sum(pubKey, XOR, i), 3);
-			C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1 - 2 * deltaA);
-			C[i] = DGKOperations.subtract(pubKey, C[i], Encrypted_Y[i]);
-			C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(x, i));
+			C[i] = DGKOperations.multiply(DGKOperations.sum(XOR, pubKey, i), 3, pubKey);
+			C[i] = DGKOperations.add_plaintext(C[i], 1 - 2 * deltaA, pubKey);
+			C[i] = DGKOperations.subtract(C[i], Encrypted_Y[i], pubKey);
+			C[i] = DGKOperations.add_plaintext(C[i], NTL.bit(x, i), pubKey);
 			/*
 			if(x.testBit(i))
 			{
@@ -176,13 +167,13 @@ public final class alice extends socialist_millionaires implements Runnable
 		}
 
 		//This is c_{-1}
-		C[Encrypted_Y.length] = DGKOperations.sum(pubKey, XOR);
-		C[Encrypted_Y.length] = DGKOperations.add_plaintext(pubKey, C[Encrypted_Y.length], deltaA);
+		C[Encrypted_Y.length] = DGKOperations.sum(XOR, pubKey);
+		C[Encrypted_Y.length] = DGKOperations.add_plaintext(C[Encrypted_Y.length], deltaA, pubKey);
 
 		// Step 5: Blinds C_i, Shuffle it and send to Bob
 		for (int i = 0; i < C.length; i++)
 		{
-			C[i] = DGKOperations.multiply(pubKey, C[i], rnd.nextInt(pubKey.getU().intValue()) + 1);
+			C[i] = DGKOperations.multiply(C[i], rnd.nextInt(pubKey.getU().intValue()) + 1, pubKey);
 		}
 		C = shuffle_bits(C);
 		toBob.writeObject(C);
@@ -209,7 +200,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		 * Send him the encrypted answer!
 		 * Alice and Bob know now without revealing x or y!
 		 */
-		toBob.writeObject(DGKOperations.encrypt(pubKey, answer));
+		toBob.writeObject(DGKOperations.encrypt(answer, pubKey));
 		toBob.flush();
 		return answer == 1;
 	}
@@ -348,14 +339,15 @@ public final class alice extends socialist_millionaires implements Runnable
 	 * @return X <= Y
 	 * @throws ClassNotFoundException
 	 * @throws IOException
+	 * @throws HomomorphicException 
 	 */
-	public boolean Protocol3(BigInteger x) throws ClassNotFoundException, IOException
+	public boolean Protocol3(BigInteger x) throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		return Protocol3(x, rnd.nextInt(2));
 	}
 	
 	private boolean Protocol3(BigInteger x, int deltaA)
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		if(x.bitLength() > pubKey.getL())
 		{
@@ -429,7 +421,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			if (NTL.bit(x, i) == 1)
 			{
-				XOR[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), Encrypted_Y[i]);
+				XOR[i] = DGKOperations.subtract(pubKey.ONE(), Encrypted_Y[i], pubKey);
 			}
 			else
 			{
@@ -446,24 +438,24 @@ public final class alice extends socialist_millionaires implements Runnable
 			
 		for (int i = 0; i < Encrypted_Y.length; i++)
 		{
-			C[i] = DGKOperations.sum(pubKey, XOR, Encrypted_Y.length - 1 - i);
+			C[i] = DGKOperations.sum(XOR, pubKey, Encrypted_Y.length - 1 - i);
 			if (deltaA == 0)
 			{
 				// Step 4 = [1] - [y_i bit] + [c_i]
 				// Step 4 = [c_i] - [y_i bit] + [1]
-				C[i] = DGKOperations.subtract(pubKey, C[i], Encrypted_Y[Encrypted_Y.length - 1 - i]);
-				C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1);
+				C[i] = DGKOperations.subtract(C[i], Encrypted_Y[Encrypted_Y.length - 1 - i], pubKey);
+				C[i] = DGKOperations.add_plaintext(C[i], 1, pubKey);
 			}
 			else
 			{
 				// Step 4 = [y_i] + [c_i]
-				C[i]= DGKOperations.add(pubKey, C[i], Encrypted_Y[Encrypted_Y.length - 1 - i]);
+				C[i]= DGKOperations.add(C[i], Encrypted_Y[Encrypted_Y.length - 1 - i], pubKey);
 			}
 		}
 		
 		// This is c_{-1}
-		C[Encrypted_Y.length] = DGKOperations.sum(pubKey, XOR);
-		C[Encrypted_Y.length] = DGKOperations.add_plaintext(pubKey, C[Encrypted_Y.length], deltaA);
+		C[Encrypted_Y.length] = DGKOperations.sum(XOR, pubKey);
+		C[Encrypted_Y.length] = DGKOperations.add_plaintext(C[Encrypted_Y.length], deltaA, pubKey);
 
 		// Step 5: Apply the Blinding to C_i and send it to Bob
 		for (int i = 0; i < Encrypted_Y.length; i++)
@@ -473,14 +465,14 @@ public final class alice extends socialist_millionaires implements Runnable
 			int bit = NTL.bit(x, i);
 			if(bit != deltaA)
 			{
-				C[Encrypted_Y.length - 1 - i] = DGKOperations.encrypt(pubKey, rnd.nextInt(pubKey.getL()) + 1);
+				C[Encrypted_Y.length - 1 - i] = DGKOperations.encrypt(rnd.nextInt(pubKey.getL()) + 1, pubKey);
 			}
 		}
 		// Blind and Shuffle bits!
 		C = shuffle_bits(C);
 		for (int i = 0; i < C.length; i++)
 		{
-			C[i] = DGKOperations.multiply(pubKey, C[i], rnd.nextInt(pubKey.getL()) + 1);
+			C[i] = DGKOperations.multiply(C[i], rnd.nextInt(pubKey.getL()) + 1, pubKey);
 		}
 		toBob.writeObject(C);
 		toBob.flush();
@@ -504,7 +496,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		 * Send him the encrypted answer!
 		 * Alice and Bob know now without revealing x or y!
 		 */
-		toBob.writeObject(DGKOperations.encrypt(pubKey, BigInteger.valueOf(answer)));
+		toBob.writeObject(DGKOperations.encrypt(BigInteger.valueOf(answer), pubKey));
 		toBob.flush();
 		return answer == 1;
 	}
@@ -517,9 +509,10 @@ public final class alice extends socialist_millionaires implements Runnable
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 * @throws IllegalArgumentException
+	 * @throws HomomorphicException 
 	 */
 	public boolean Modified_Protocol3(BigInteger r)
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		BigInteger alpha = null;
 		boolean answer;
@@ -544,7 +537,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	private boolean Modified_Protocol3(BigInteger alpha, BigInteger r, int deltaA) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, HomomorphicException
 	{
 		int answer = -1;
 		Object in = null;
@@ -627,7 +620,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		// Step C: Alice corrects d...
 		if(r.compareTo(N.subtract(BigInteger.ONE).divide(TWO)) == -1)
 		{
-			d = DGKOperations.encrypt(pubKey, BigInteger.ZERO);
+			d = DGKOperations.encrypt(BigInteger.ZERO, pubKey);
 		}
 		
 		// Step D: Compute alpha_bits XOR beta_bits
@@ -636,7 +629,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			if (NTL.bit(alpha, i) == 1)
 			{
-				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey, pubKey.ONE(), beta_bits[i]);
+				encAlphaXORBeta[i] = DGKOperations.subtract(pubKey.ONE(), beta_bits[i], pubKey);
 			}
 			else
 			{
@@ -665,7 +658,7 @@ public final class alice extends socialist_millionaires implements Runnable
 			}
 			else
 			{
-				w[i] = DGKOperations.subtract(pubKey, encAlphaXORBeta[i], d);
+				w[i] = DGKOperations.subtract(encAlphaXORBeta[i], d, pubKey);
 			}
 			/*
 			if(alpha_hat.testBit(i) == alpha.testBit(i))
@@ -693,14 +686,14 @@ public final class alice extends socialist_millionaires implements Runnable
 				*/
 				if(NTL.bit(alpha_hat, i) == NTL.bit(alpha, i))
 				{
-					w[i] = DGKOperations.multiply(pubKey, w[i], pubKey.getL());	
+					w[i] = DGKOperations.multiply(w[i], pubKey.getL(), pubKey);	
 				}
 			}
 			else
 			{
 				if(NTL.bit(alpha_hat, i) == NTL.bit(alpha, i))
 				{
-					w[i] = DGKOperations.multiply(pubKey, w[i], powL);	
+					w[i] = DGKOperations.multiply(w[i], powL, pubKey);	
 				}
 				/*
 				if(alpha_hat.testBit(i) == alpha.testBit(i))
@@ -737,23 +730,23 @@ public final class alice extends socialist_millionaires implements Runnable
 					exponent -= 1;
 				}
 				exponent = NTL.bit(alpha_hat, i) - NTL.bit(alpha, i);
-				C[i] = DGKOperations.multiply(pubKey, DGKOperations.sum(pubKey, w, i), 3);
-				C[i] = DGKOperations.add_plaintext(pubKey, C[i], 1 - (2* deltaA));
-				C[i] = DGKOperations.add(pubKey, C[i], DGKOperations.multiply(pubKey, d, exponent));
-				C[i] = DGKOperations.subtract(pubKey, C[i], beta_bits[i]);
-				C[i] = DGKOperations.add_plaintext(pubKey, C[i], NTL.bit(alpha, i));
+				C[i] = DGKOperations.multiply(DGKOperations.sum(w, pubKey, i), 3, pubKey);
+				C[i] = DGKOperations.add_plaintext(C[i], 1 - (2* deltaA), pubKey);
+				C[i] = DGKOperations.add(C[i], DGKOperations.multiply(d, exponent, pubKey), pubKey);
+				C[i] = DGKOperations.subtract(C[i], beta_bits[i], pubKey);
+				C[i] = DGKOperations.add_plaintext(C[i], NTL.bit(alpha, i), pubKey);
 			}
 		}
 		
 		//This is c_{-1}
-		C[beta_bits.length] = DGKOperations.sum(pubKey, encAlphaXORBeta);
-		C[beta_bits.length] = DGKOperations.add_plaintext(pubKey, C[beta_bits.length], deltaA);
+		C[beta_bits.length] = DGKOperations.sum(encAlphaXORBeta, pubKey);
+		C[beta_bits.length] = DGKOperations.add_plaintext(C[beta_bits.length], deltaA, pubKey);
 
 		// Step I: SHUFFLE BITS AND BLIND WITH EXPONENT
 		C = shuffle_bits(C);
 		for (int i = 0; i < C.length; i++)
 		{
-			C[i] = DGKOperations.multiply(pubKey, C[i], rnd.nextInt(pubKey.getU().intValue()) + 1);
+			C[i] = DGKOperations.multiply(C[i], rnd.nextInt(pubKey.getU().intValue()) + 1, pubKey);
 		}
 		toBob.writeObject(C);
 		toBob.flush();
@@ -768,7 +761,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			answer = 1;
 		}
-		toBob.writeObject(DGKOperations.encrypt(pubKey, answer));
+		toBob.writeObject(DGKOperations.encrypt(answer, pubKey));
 		toBob.flush();
 		return answer == 1;
 	}
@@ -812,8 +805,8 @@ public final class alice extends socialist_millionaires implements Runnable
 		if (isDGK)
 		{
 			r = NTL.RandomBnd(pubKey.getU());
-			z = DGKOperations.add_plaintext(pubKey, x, r.add(powL).mod(pubKey.getU()));
-			z = DGKOperations.subtract(pubKey, z, y);
+			z = DGKOperations.add_plaintext(x, r.add(powL).mod(pubKey.getU()), pubKey);
+			z = DGKOperations.subtract(z, y, pubKey);
 			N = pubKey.getU();
 		}
 		else
@@ -896,23 +889,23 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			if(deltaA == 1)
 			{
-				alpha_lt_beta = DGKOperations.encrypt(pubKey, deltaB);
+				alpha_lt_beta = DGKOperations.encrypt(deltaB, pubKey);
 			}
 			else
 			{
-				alpha_lt_beta = DGKOperations.encrypt(pubKey, 1 - deltaB);
+				alpha_lt_beta = DGKOperations.encrypt(1 - deltaB, pubKey);
 			}
 			
 			// Step 7: Compute [[x <= y]]
 			if(r.compareTo(pubKey.getU().subtract(BigInteger.ONE).divide(TWO)) == -1)
 			{
-				result = DGKOperations.subtract(pubKey, zeta_one, DGKOperations.encrypt(pubKey, r.divide(powL)));
-				result = DGKOperations.subtract(pubKey, result, alpha_lt_beta);
+				result = DGKOperations.subtract(zeta_one, DGKOperations.encrypt(r.divide(powL), pubKey), pubKey);
+				result = DGKOperations.subtract(result, alpha_lt_beta, pubKey);
 			}
 			else
 			{
-				result = DGKOperations.subtract(pubKey, zeta_two, DGKOperations.encrypt(pubKey, r.divide(powL)));
-				result = DGKOperations.subtract(pubKey, result, alpha_lt_beta);
+				result = DGKOperations.subtract(zeta_two, DGKOperations.encrypt(r.divide(powL), pubKey), pubKey);
+				result = DGKOperations.subtract(result, alpha_lt_beta, pubKey);
 			}	
 		}
 		else
@@ -958,7 +951,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	public boolean Protocol4(ElGamal_Ciphertext x, ElGamal_Ciphertext y) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, HomomorphicException
 	{
 		int deltaB = -1;
 		int x_leq_y = -1;
@@ -1144,7 +1137,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		if(isDGK)
 		{
 			r = NTL.generateXBitRandom(pubKey.getL() - 1).mod(pubKey.getU());
-			z = DGKOperations.add_plaintext(pubKey, x, r);
+			z = DGKOperations.add_plaintext(x, r, pubKey);
 			//N = pubKey.bigU;
 		}
 		else
@@ -1191,15 +1184,15 @@ public final class alice extends socialist_millionaires implements Runnable
 		// [[z/d - r/d - t]]
 		if (isDGK)
 		{
-			answer = DGKOperations.subtract(pubKey, c, DGKOperations.encrypt(pubKey, r.divide(BigInteger.valueOf(d))));
+			answer = DGKOperations.subtract(c, DGKOperations.encrypt(r.divide(BigInteger.valueOf(d)), pubKey), pubKey);
 			if(t == 1)
 			{
-				answer = DGKOperations.subtract(pubKey, answer, DGKOperations.encrypt(pubKey, t));
+				answer = DGKOperations.subtract(answer, DGKOperations.encrypt(t, pubKey), pubKey);
 			}
 			// Print Answer to verify
 			if(privKey != null)
 			{
-				System.out.println("answer: " + DGKOperations.decrypt(privKey, answer));	
+				System.out.println("answer: " + DGKOperations.decrypt(answer, privKey));	
 			}
 		}
 		else
@@ -1275,8 +1268,8 @@ public final class alice extends socialist_millionaires implements Runnable
 		{
 			a = NTL.RandomBnd(pubKey.getU());
 			b = NTL.RandomBnd(pubKey.getU());
-			x_prime = DGKOperations.add_plaintext(pubKey, x, a);
-			y_prime = DGKOperations.add_plaintext(pubKey, y, b);
+			x_prime = DGKOperations.add_plaintext(x, a, pubKey);
+			y_prime = DGKOperations.add_plaintext(y, b, pubKey);
 		}
 		else
 		{
@@ -1300,10 +1293,10 @@ public final class alice extends socialist_millionaires implements Runnable
 			result = (BigInteger) in;
 			if(isDGK)
 			{
-				result = DGKOperations.subtract(pubKey, result, DGKOperations.multiply(pubKey, x, b));
-				result = DGKOperations.subtract(pubKey, result, DGKOperations.multiply(pubKey, y, a));
+				result = DGKOperations.subtract(result, DGKOperations.multiply(x, b, pubKey), pubKey);
+				result = DGKOperations.subtract(result, DGKOperations.multiply(y, a, pubKey), pubKey);
 				// To avoid throwing an exception to myself of encrypt range [0, U), mod it now!
-				result = DGKOperations.subtract(pubKey, result, DGKOperations.encrypt(pubKey, a.multiply(b).mod(pubKey.getU())));	
+				result = DGKOperations.subtract(result, DGKOperations.encrypt(a.multiply(b).mod(pubKey.getU()), pubKey), pubKey);	
 			}
 			else
 			{
@@ -1321,7 +1314,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	public ElGamal_Ciphertext division(ElGamal_Ciphertext x, long d) 
-			throws IOException, ClassNotFoundException, IllegalArgumentException
+			throws IOException, ClassNotFoundException, IllegalArgumentException, HomomorphicException
 	{
 		if(!e_pk.ADDITIVE)
 		{
@@ -1907,7 +1900,7 @@ public final class alice extends socialist_millionaires implements Runnable
 	}
 	
 	public List<ElGamal_Ciphertext> getKMin_ElGamal(List<ElGamal_Ciphertext> input, int k) 
-			throws ClassNotFoundException, IOException, IllegalArgumentException
+			throws ClassNotFoundException, IOException, IllegalArgumentException, HomomorphicException
 	{
 		if(k > input.size() || k <= 0)
 		{

@@ -168,11 +168,15 @@ public class PaillierSignature extends SignatureSpi
 		return engineVerify(signature);
 	}
 	
-	// Return <sigma_1, sigma_2>
+	/**
+	 * Please refer to "Public-Key Cryptosystems Based on Composite Degree Residuosity Classes"
+	 * @param message - plaintext
+	 * @param sk - used to sign
+	 * @return
+	 */
 	public static List<BigInteger> sign(BigInteger message, PaillierPrivateKey sk)
 	{
 		List<BigInteger> tuple = new ArrayList<BigInteger>();
-		// Hash(m) then do modPow!
 		BigInteger sigma_one = PaillierCipher.L(message.modPow(sk.lambda, sk.modulus), sk.n);
 		sigma_one = sigma_one.multiply(sk.rho);
 		
@@ -184,11 +188,18 @@ public class PaillierSignature extends SignatureSpi
 		return tuple;
 	}
 	
+	/**
+	 * Verify a Paillier signature
+	 * @param message - Plaintext message to verify
+	 * @param sigma_one - First component of signature
+	 * @param sigma_two - Second component of signature
+	 * @param pk - Used to verify signature
+	 * @return - true - valid, false - invalid
+	 */
 	public static boolean verify(BigInteger message, BigInteger sigma_one, BigInteger sigma_two, PaillierPublicKey pk)
 	{
 		BigInteger first_part = pk.g.modPow(sigma_one, pk.modulus);
 		BigInteger second_part = sigma_two.modPow(pk.n, pk.modulus);
-		// Compare with Hash!
 		if (message.compareTo(first_part.multiply(second_part).mod(pk.modulus)) == 0)
 		{
 			return true;

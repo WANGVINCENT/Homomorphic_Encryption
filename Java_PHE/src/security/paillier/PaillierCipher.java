@@ -18,6 +18,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 import security.paillier.PaillierPublicKey;
+import security.misc.CipherConstants;
 import security.misc.HomomorphicException;
 import security.misc.NTL;
 import security.paillier.PaillierPrivateKey;
@@ -28,7 +29,7 @@ import security.paillier.PaillierPrivateKey;
  * Paillier operations on BigIntegers.
  * As it extends from CipherSpi, it can also encrypt byte arrays as well.
  */
-public final class PaillierCipher extends CipherSpi
+public final class PaillierCipher extends CipherSpi implements CipherConstants
 {
 	protected int stateMode;
 	protected Key keyPaillier;
@@ -415,6 +416,7 @@ public final class PaillierCipher extends CipherSpi
 	//-----------------------BigInteger Paillier----------------------------------------------
 
 	/**
+	 * Encrypt with PaillierPublicKey
 	 * Compute ciphertext = g^{m}r^{n} (mod n^2)
 	 * @param plaintext
 	 * @param pk
@@ -456,7 +458,7 @@ public final class PaillierCipher extends CipherSpi
 	 * @param sk - used to decrypt ciphertext
 	 * @return
 	 * @throws HomomorphicException
-	 * 	- If the ciphertext is larger then the N^2, an exception will be thrown
+	 * 	- If the ciphertext is larger than N^2, an exception will be thrown
 	 */
 	public static BigInteger decrypt(BigInteger ciphertext, PaillierPrivateKey sk) 
 			throws HomomorphicException
@@ -484,37 +486,68 @@ public final class PaillierCipher extends CipherSpi
 	 * @param ciphertext2 - Encrypted Paillier value
 	 * @param pk - used to encrypt both ciphertexts
 	 * @return
+	 * @throws HomomorphicException 
+	 * - If either ciphertext is greater than N or negative, throw an exception
 	 */
-	public static BigInteger add(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk)
+	public static BigInteger add(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk) 
+			throws HomomorphicException
 	{
+		if (ciphertext1.signum() ==-1 || ciphertext1.compareTo(pk.n) == 1)
+		{
+			throw new HomomorphicException("DGKAdd Invalid Parameter ciphertext1: " + ciphertext1);
+		}
+		else if (ciphertext2.signum() ==-1 || ciphertext2.compareTo(pk.n) == 1)
+		{
+			throw new HomomorphicException("DGKAdd Invalid Parameter ciphertext2: " + ciphertext2);
+		}
 		BigInteger ciphertext = ciphertext1.multiply(ciphertext2).mod(pk.modulus);
 		return ciphertext;
 	}
 	
 	/**
 	 * returns the sum of the Paillier encrypted value and plaintext value
-	 * Note: The result is still encrypted
-	 * Warning: If the sum exceeds N, it is subjec to mod N
+	 * Warning: If the sum exceeds N, it is subject to mod N
 	 * @param ciphertext - Paillier encrypted value
 	 * @param plaintext
 	 * @param pk - was used to encrypt ciphertext
-	 * @return
+	 * @return Encrypted sum of ciphertext and plaintext
+	 * @throws HomomorphicException 
+	 * - If a ciphertext is negative or exceeds N^2 or plaintext is negative or exceeds N
 	 */
-	public static BigInteger add_plaintext(BigInteger ciphertext, BigInteger plaintext, PaillierPublicKey pk)
+	public static BigInteger add_plaintext(BigInteger ciphertext, BigInteger plaintext, PaillierPublicKey pk) throws HomomorphicException
 	{
+		if (ciphertext.signum() ==-1 || ciphertext.compareTo(pk.n) == 1)
+		{
+			throw new HomomorphicException("Paillier add_plaintext Invalid Parameter ciphertext: " + ciphertext);
+		}
+		// will accept plaintext -1 because of Protocol 1 and Modified Protocol 3 need it
+		else if (plaintext.compareTo(NEG_ONE) == -1 || plaintext.compareTo(pk.n) == 1)
+		{
+			throw new HomomorphicException("Paillier add_plaintext Invalid Parameter plaintext: " + plaintext);		
+		}
 		BigInteger new_ciphertext = ciphertext.multiply(pk.g.modPow(plaintext, pk.modulus)).mod(pk.modulus);
 		return new_ciphertext;
 	}
 
-	public static BigInteger add_plaintext(BigInteger ciphertext, long plaintext, PaillierPublicKey pk)
+	public static BigInteger add_plaintext(BigInteger ciphertext, long plaintext, PaillierPublicKey pk) 
+			throws HomomorphicException
 	{
-		BigInteger new_ciphertext = ciphertext.multiply(pk.g.modPow(BigInteger.valueOf(plaintext), pk.modulus)).mod(pk.modulus);
+		BigInteger new_ciphertext = add_plaintext(ciphertext, BigInteger.valueOf(plaintext), pk);
 		return new_ciphertext;
 	}
+	
+	/**
+	 * Subtract ciphertext1 and ciphertext 2
+	 * @param ciphertext1 - Paillier ciphertext
+	 * @param ciphertext2 - Paillier ciphertext
+	 * @param pk - used to encrypt both ciphertexts
+	 * @return Paillier encrypted ciphertext with ciphertext1 - ciphertext2
+	 * @throws HomomorphicException 
+	 */
 
-	public static BigInteger subtract(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk)
+	public static BigInteger subtract(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk) throws HomomorphicException
 	{
-		BigInteger neg_ciphertext2 = PaillierCipher.multiply(ciphertext2, pk.n.subtract(BigInteger.ONE), pk);
+		BigInteger neg_ciphertext2 = multiply(ciphertext2, pk.n.subtract(BigInteger.ONE), pk);
 		BigInteger ciphertext = ciphertext1.multiply(neg_ciphertext2).mod(pk.modulus);
 		return ciphertext;
 	}
@@ -525,7 +558,7 @@ public final class PaillierCipher extends CipherSpi
 	 * @param ciphertext - Encrypted Paillier value
 	 * @param plaintext 
 	 * @param pk - used to encrypt ciphertext
-	 * @return
+	 * @return Paillier encrypted ciphertext with ciphertext1 - ciphertext2
 	 */
 	public static BigInteger subtract_plaintext(BigInteger ciphertext, BigInteger plaintext, PaillierPublicKey pk)
 	{
@@ -536,18 +569,29 @@ public final class PaillierCipher extends CipherSpi
 	/**
 	 * Compute the Paillier encrypted value of ciphertext multiplied by the plaintext.
 	 * @param ciphertext - Paillier encrypted value
-	 * @param scalar - plaintext value
-	 * @param pk - Paillier Public key the encrypted ciphertext
-	 * @return
+	 * @param plaintext
+	 * @param pk - Paillier Public key that encrypted the ciphertext
+	 * @return 
+	 * @throws HomomorphicException 
+	 * If ciphertext is negative or exceeds N^2 or plaintext exceeds N
 	 */
 
-	public static BigInteger multiply(BigInteger ciphertext, BigInteger scalar, PaillierPublicKey pk)
+	public static BigInteger multiply(BigInteger ciphertext, BigInteger plaintext, PaillierPublicKey pk) throws HomomorphicException
 	{
-		BigInteger new_ciphertext = ciphertext.modPow(scalar, pk.modulus);
+		if (ciphertext.signum() == -1 || ciphertext.compareTo(pk.modulus) == 1)
+		{
+			throw new HomomorphicException("PaillierCipher Multiply Invalid Parameter ciphertext: " + ciphertext);
+		}
+		if(plaintext.compareTo(pk.n) == 1)
+		{
+			throw new HomomorphicException("PaillierCipher Invalid Parameter plaintext: " + plaintext);
+		}
+		BigInteger new_ciphertext = ciphertext.modPow(plaintext, pk.modulus);
 		return new_ciphertext;
 	}
 
-	public static BigInteger multiply(BigInteger ciphertext1, long scalar, PaillierPublicKey pk) 
+	public static BigInteger multiply(BigInteger ciphertext1, long scalar, PaillierPublicKey pk)
+			throws HomomorphicException 
 	{
 		return multiply(ciphertext1, BigInteger.valueOf(scalar), pk);
 	}
@@ -560,16 +604,17 @@ public final class PaillierCipher extends CipherSpi
 	 * @param ciphertext - Paillier ciphertext
 	 * @param divisor - plaintext value
 	 * @param pk - was used to encrypt ciphertext
-	 * @return Encrypted Paillier value equal to ciphertext/division
+	 * @return Encrypted Paillier value equal to ciphertext/plaintext
+	 * @throws HomomorphicException 
 	 */
-	public static BigInteger divide(BigInteger ciphertext, long divisor, PaillierPublicKey pk)
-	{
-		return divide(ciphertext, BigInteger.valueOf(divisor), pk);
-	}
-
-	public static BigInteger divide(BigInteger ciphertext, BigInteger divisor, PaillierPublicKey pk)
+	public static BigInteger divide(BigInteger ciphertext, BigInteger divisor, PaillierPublicKey pk) throws HomomorphicException
 	{
 		return multiply(ciphertext, divisor.modInverse(pk.modulus), pk);
+	}
+	
+	public static BigInteger divide(BigInteger ciphertext, long divisor, PaillierPublicKey pk) throws HomomorphicException
+	{
+		return divide(ciphertext, BigInteger.valueOf(divisor), pk);
 	}
 
 	/**
@@ -681,45 +726,52 @@ public final class PaillierCipher extends CipherSpi
 	 * @param plain - List of plaintext
 	 * @return Encrypted sum product
 	 * @throws HomomorphicException
+	 * If the lists of encrypted values and plaintext values are not equal
 	 */
-	public static BigInteger sum_product (PaillierPublicKey pk, List<BigInteger> cipher, List<Long> plain) 
+	public static BigInteger sum_product (List<BigInteger> ciphertext, List<Long> plaintext, PaillierPublicKey pk) 
 			throws HomomorphicException
 	{
-		if(cipher.size() != plain.size())
+		if(ciphertext.size() != plaintext.size())
 		{
-			throw new HomomorphicException("Arrays are NOT the same size!");
+			throw new HomomorphicException("Lists are NOT the same size!");
 		}
 
-		BigInteger [] product_vector = new BigInteger[cipher.size()];
-		for (int i = 0; i < product_vector.length; i++)
+		BigInteger sum = PaillierCipher.encrypt(0, pk);
+		BigInteger temp = null;
+		for (int i = 0; i < ciphertext.size(); i++)
 		{
-			product_vector[i] = PaillierCipher.multiply(cipher.get(i), plain.get(i), pk);
+			temp = PaillierCipher.multiply(ciphertext.get(i), plaintext.get(i), pk);
+			sum = PaillierCipher.add(temp, sum, pk);
 		}
-		return sum(product_vector, pk);
+		return sum;
 	}
+	
 	/**
 	 * Compute the sum-product. It computes the scalar multiplication between
 	 * the array of Encrypted and plaintext values.
 	 * Then it computes the encrypted sum.
-	 * @param pk - Paillier Public Key used to encrypt values in cipher-text list
 	 * @param cipher - Array of Encrypted Paillier values
 	 * @param plain - Array of plaintext values
+	 * @param pk - Paillier Public Key used to encrypt values in cipher-text list
 	 * @return Encrypted sum-product
 	 * @throws HomomorphicException
+	 * - If the size of plaintext array and ciphertext array isn't equal
 	 */
-	public static BigInteger sum_product (PaillierPublicKey pk, BigInteger[] cipher, Long[] plain)
+	public static BigInteger sum_product (BigInteger[] ciphertext, Long[] plaintext, PaillierPublicKey pk)
 			throws HomomorphicException
 	{
-		if(cipher.length != plain.length)
+		if(ciphertext.length != plaintext.length)
 		{
 			throw new HomomorphicException("Arrays are NOT the same size!");
 		}
-
-		BigInteger [] product_vector = new BigInteger[cipher.length];
-		for (int i = 0; i < product_vector.length; i++)
+		
+		BigInteger sum = PaillierCipher.encrypt(0, pk);
+		BigInteger temp = null;
+		for (int i = 0; i < ciphertext.length; i++)
 		{
-			product_vector[i] = PaillierCipher.multiply(cipher[i], plain[i], pk);
+			temp = PaillierCipher.multiply(ciphertext[i], plaintext[i], pk);
+			sum = PaillierCipher.add(temp, sum, pk);
 		}
-		return sum(product_vector, pk);
+		return sum;
 	}
 }
