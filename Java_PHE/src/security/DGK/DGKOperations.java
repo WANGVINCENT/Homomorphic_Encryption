@@ -157,7 +157,7 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 		} 
 		catch (ShortBufferException sbe) 
 		{
-
+			
 		}
 		return out;
 	}
@@ -366,7 +366,7 @@ public final class DGKOperations extends CipherSpi implements CipherConstants
 	protected final void calculateBlockSizes(int modulusLength)
 	{
 		plaintextSize = ((modulusLength + 8) / 8);
-		ciphertextSize = (((modulusLength + 12) / 8) * 2)-1;
+		ciphertextSize = (((modulusLength + 12) / 8) * 2) - 1;
 	}
 	
 	// --------------------PUBLIC FACING METHODS--------------------------

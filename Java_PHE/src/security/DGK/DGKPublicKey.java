@@ -12,6 +12,9 @@ import security.misc.CipherConstants;
 
 public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Runnable, CipherConstants
 {
+	/**
+	 * The type fingerprint that is set to indicate serialization compatibility with a previous version of the type.
+	 */
 	private static final long serialVersionUID = -1613333167285302035L;
 	
 	protected final BigInteger n;
@@ -62,11 +65,17 @@ public final class DGKPublicKey implements Serializable, DGK_Key, PublicKey, Run
 		return DGKOperations.encrypt(1, this);
 	}
 
+	/**
+	 * @return DGK
+	 */
 	public String getAlgorithm() 
 	{
 		return "DGK";
 	}
 
+	/**
+	 * @return String representation of DGK Public Key
+	 */
 	public String toString()
 	{
 		String answer = "";

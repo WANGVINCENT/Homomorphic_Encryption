@@ -52,6 +52,16 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 			throws SignatureException 
 	{
 		// Since I am using SHA-256, that is 256 bits or 32 bytes long!
+		MessageDigest digest = null;
+		try
+		{
+			digest = MessageDigest.getInstance("SHA-256");
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			e.printStackTrace();
+		}
+		this.encoded_hash = digest.digest(new byte [] { b });
 	}
 
 	// Input 2: Prepare bytes to sign or verify!
@@ -129,6 +139,12 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 	{
 		
 	}
+	
+	protected void engineSetParameter(String param, Object value)
+			throws InvalidParameterException 
+	{
+		
+	}
 
 	protected AlgorithmParameters engineGetParameter() 
 			throws InvalidParameterException
@@ -136,69 +152,12 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		return null;
 	}
 	
-	/**
-	 * Sign a message with ElGamal Private Key
-	 * https://en.wikipedia.org/wiki/ElGamal_signature_scheme
-	 * @param M - plaintext message
-	 * @return - signed message
-	 */
-	public ElGamal_Ciphertext sign(BigInteger M, ElGamalPrivateKey sk)
+	protected Object engineGetParameter(String param) 
+			throws InvalidParameterException 
 	{
-		BigInteger p1 = sk.p.subtract(BigInteger.ONE);
-		BigInteger K = null;
-		while(true)
-		{
-			// Pick [0, p - 2]
-			K = NTL.RandomBnd(p1);
-			// Need K [2, P - 2]
-			if(K.equals(BigInteger.ONE) || K.equals(BigInteger.ZERO))
-			{
-				continue;
-			}
-			if(K.gcd(p1).equals(BigInteger.ONE))
-			{
-				break;
-			}
-		}
-		BigInteger r = this.sk.g.modPow(K, sk.p);
-		BigInteger s = M.subtract(sk.x.multiply(r)).multiply(K.modInverse(p1)).mod(p1);
-		return new ElGamal_Ciphertext(r, s);
+		return null;
 	}
 	
-	/**
-	 * Verify a message with ElGamal Private Key
-	 * https://en.wikipedia.org/wiki/ElGamal_signature_scheme
-	 * @param M - plaintext message
-	 * @param sig - signed message to verify
-	 * @param pk - Used to verify signed message integrity
-	 * @return - true - is valid, false - not valid
-	 */
-	public boolean verify(BigInteger M, ElGamal_Ciphertext sig, ElGamalPublicKey pk)
-	{
-		BigInteger r = sig.getA();
-		BigInteger s = sig.getB();
-		BigInteger check = null;
-
-		if (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(pk.p.subtract(BigInteger.ONE)) == 1)
-		{
-			System.err.println("r: " + r + " and " + pk.p.subtract(BigInteger.ONE));
-			return false;
-		}
-		if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(TWO)) == 1)
-		{
-			System.err.println("s: " + s + " and " + pk.p.subtract(TWO));
-			return false;
-		}
-		// h = y = g^x
-		check = pk.h.modPow(r, pk.p);
-		check = check.multiply(r.modPow(s, pk.p)).mod(pk.p);
-		if (check.compareTo(pk.g.modPow(M, pk.p)) == 0)
-		{
-			return true;
-		}
-		return false;
-	}
-
 	// PUBLIC FACING FUNCTIONS
 	public void initSign(ElGamalPrivateKey sk) throws InvalidKeyException
 	{
@@ -225,15 +184,70 @@ public class ElGamalSignature extends SignatureSpi implements CipherConstants
 		return engineVerify(signature);
 	}
 	
-	protected void engineSetParameter(String param, Object value)
-			throws InvalidParameterException 
+	/**
+	 * Sign a message with ElGamal Private Key
+	 * https://en.wikipedia.org/wiki/ElGamal_signature_scheme
+	 * @param message - plaintext
+	 * @param sk - ElGamal Private Key to sign
+	 * @return - signed message
+	 */
+	public ElGamal_Ciphertext sign(BigInteger message, ElGamalPrivateKey sk)
 	{
-		
+		BigInteger p1 = sk.p.subtract(BigInteger.ONE);
+		BigInteger K = null;
+		while(true)
+		{
+			// Pick [0, p - 2]
+			K = NTL.RandomBnd(p1);
+			// Need K [2, P - 2]
+			if(K.equals(BigInteger.ONE) || K.equals(BigInteger.ZERO))
+			{
+				continue;
+			}
+			if(K.gcd(p1).equals(BigInteger.ONE))
+			{
+				break;
+			}
+		}
+		BigInteger r = this.sk.g.modPow(K, sk.p);
+		BigInteger s = message.subtract(sk.x.multiply(r)).multiply(K.modInverse(p1)).mod(p1);
+		return new ElGamal_Ciphertext(r, s);
 	}
-
-	protected Object engineGetParameter(String param) 
-			throws InvalidParameterException 
+	
+	/**
+	 * Verify a message with ElGamal Public Key
+	 * https://en.wikipedia.org/wiki/ElGamal_signature_scheme
+	 * @param message - plaintext
+	 * @param signature - signed message to verify
+	 * @param pk - Used to verify signed message integrity
+	 * @return - true - is valid, false - not valid
+	 */
+	public boolean verify(BigInteger message, ElGamal_Ciphertext signature, ElGamalPublicKey pk)
 	{
-		return null;
+		BigInteger r = signature.getA();
+		BigInteger s = signature.getB();
+		BigInteger check = null;
+
+		if (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(pk.p.subtract(BigInteger.ONE)) == 1)
+		{
+			System.err.println("r: " + r + " and " + pk.p.subtract(BigInteger.ONE));
+			return false;
+		}
+		if (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(pk.p.subtract(TWO)) == 1)
+		{
+			System.err.println("s: " + s + " and " + pk.p.subtract(TWO));
+			return false;
+		}
+		// h = y = g^x
+		check = pk.h.modPow(r, pk.p);
+		check = check.multiply(r.modPow(s, pk.p)).mod(pk.p);
+		if (check.compareTo(pk.g.modPow(message, pk.p)) == 0)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }

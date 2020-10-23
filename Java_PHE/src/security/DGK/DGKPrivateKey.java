@@ -37,11 +37,9 @@ public final class DGKPrivateKey implements Serializable, DGK_Key, PrivateKey
 	// Signature
 	public final BigInteger v;
 
-	// Original DGK Private Key Constructor
 	public DGKPrivateKey (BigInteger p, BigInteger q, BigInteger vp,
 			BigInteger vq, DGKPublicKey pubKey)
 	{
-		// Fill Private Key Parameters
 		this.p = p;
 		this.q = q;
 		this.vp = vp;

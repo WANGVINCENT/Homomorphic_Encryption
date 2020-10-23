@@ -1779,7 +1779,7 @@ public final class alice extends socialist_millionaires implements Runnable
 		toBob.flush();
 	}
 
-	public void receivePublicKeys() 
+	protected void receivePublicKeys() 
 			throws IOException, ClassNotFoundException
 	{
 		Object x = null;

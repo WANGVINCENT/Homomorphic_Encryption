@@ -47,7 +47,17 @@ public class DGKSignature extends SignatureSpi
 	protected void engineUpdate(byte b) 
 			throws SignatureException 
 	{
-		
+		// Since I am using SHA-256, that is 256 bits or 32 bytes long!
+		MessageDigest digest = null;
+		try 
+		{
+			digest = MessageDigest.getInstance("SHA-256");
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			e.printStackTrace();
+		}
+		this.encoded_hash = digest.digest(new byte [] {b});
 	}
 
 	// Input 2: Prepare bytes to sign or verify!
@@ -89,19 +99,19 @@ public class DGKSignature extends SignatureSpi
 	protected void engineSetParameter(AlgorithmParameterSpec param) 
 			throws InvalidParameterException 
 	{
-
-	}
-
-	protected AlgorithmParameters engineGetParameter() 
-			throws InvalidParameterException
-	{
-		return null;
+		
 	}
 
 	protected void engineSetParameter(String param, Object value) 
 			throws InvalidParameterException 
 	{
-
+		
+	}
+	
+	protected AlgorithmParameters engineGetParameter() 
+			throws InvalidParameterException
+	{
+		return null;
 	}
 
 	protected Object engineGetParameter(String param) 
@@ -136,21 +146,38 @@ public class DGKSignature extends SignatureSpi
 		return engineVerify(signature);
 	}
 	
-	public static BigInteger sign(BigInteger message, DGKPrivateKey privKey)
+	/**
+	 * Sign a message with DGK Private Key
+	 * NOTE: THIS HAS NOT BEEN TESTED OR VERIFIED AS CRYTPOGRAPHICALLY SECURE
+	 * @param message - plaintext to sign
+	 * @param sk - used to sign the message
+	 * @return signed bytes
+	 * @throws IllegalArgumentException
+	 */
+	public static BigInteger sign(BigInteger message, DGKPrivateKey sk)
 			throws IllegalArgumentException
 	{
 		BigInteger signature = null;
 		// g^{v} * {m} (mod n) 
-		signature = privKey.g.modPow(privKey.v, privKey.n);
-		signature = signature.multiply(message).mod(privKey.n);
+		signature = sk.g.modPow(sk.v, sk.n);
+		signature = signature.multiply(message).mod(sk.n);
 		return signature;
 	}
-
-	public static boolean verify(BigInteger message, BigInteger certificate, DGKPublicKey pubKey)
+	
+	/**
+	 * Verify a message with a DGK Public Key
+	 * NOTE: THIS HAS NOT BEEN TESTED OR VERIFIED AS CRYTPOGRAPHICALLY SECURE
+	 * @param message - plaintext
+	 * @param signature - signed message to verify
+	 * @param pk - Used to verify signed message integrity
+	 * @return - true - is valid, false - not valid
+	 */
+	
+	public static boolean verify(BigInteger message, BigInteger signature, DGKPublicKey pk)
 	{
-		BigInteger challenge = certificate.modPow(pubKey.bigU, pubKey.n);
+		BigInteger challenge = signature.modPow(pk.bigU, pk.n);
 		// g^{v} * {m} (mod n) --> g^{v * u} * { m } (mod n) --> m^{u} (mod n)
-		if (message.modPow(pubKey.bigU, pubKey.n).compareTo(challenge) == 0)
+		if (message.modPow(pk.bigU, pk.n).compareTo(challenge) == 0)
 		{
 			return true;
 		}

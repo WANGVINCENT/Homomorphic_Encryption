@@ -55,7 +55,17 @@ public class PaillierSignature extends SignatureSpi
 	protected void engineUpdate(byte b) 
 			throws SignatureException 
 	{
-		
+		// Since I am using SHA-256, that is 256 bits or 256/8 bytes long!
+		MessageDigest digest = null;
+		try 
+		{
+			digest = MessageDigest.getInstance("SHA-256");
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			e.printStackTrace();
+		}
+		this.encoded_hash = digest.digest(new byte [] { b });		
 	}
 
 	// Input 2: Prepare bytes to sign or verify!
@@ -124,16 +134,16 @@ public class PaillierSignature extends SignatureSpi
 
 	}
 
-	protected AlgorithmParameters engineGetParameter() 
-			throws InvalidParameterException
-	{
-		return null;
-	}
-
 	protected void engineSetParameter(String param, Object value) 
 			throws InvalidParameterException 
 	{
 
+	}
+
+	protected AlgorithmParameters engineGetParameter() 
+			throws InvalidParameterException
+	{
+		return null;
 	}
 
 	protected Object engineGetParameter(String param) 
@@ -170,8 +180,8 @@ public class PaillierSignature extends SignatureSpi
 	
 	/**
 	 * Please refer to "Public-Key Cryptosystems Based on Composite Degree Residuosity Classes"
-	 * @param message - plaintext
-	 * @param sk - used to sign
+	 * @param message to sign
+	 * @param sk - used to sign message
 	 * @return
 	 */
 	public static List<BigInteger> sign(BigInteger message, PaillierPrivateKey sk)

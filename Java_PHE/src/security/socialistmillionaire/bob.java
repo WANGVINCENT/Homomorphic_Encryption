@@ -22,12 +22,33 @@ import security.paillier.PaillierPrivateKey;
 
 public final class bob extends socialist_millionaires implements Runnable
 {
+	/**
+	 * Create a bob instance for running extending protocols such as comparing 
+	 * encrypted numbers
+	 * @param clientSocket
+	 * @param a - 
+	 * @param b - 
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 * If a is not a Pailler Keypair or b is not a DGK key pair
+	 */
 	public bob (Socket clientSocket,
 			KeyPair a, KeyPair b) throws IOException, IllegalArgumentException
 	{
 		this(clientSocket, a, b, null);
 	}
 	
+	/**
+	 * Create a bob instance for running extending protocols such as comparing 
+	 * encrypted numbers
+	 * @param clientSocket
+	 * @param a 
+	 * @param b 
+	 * @param c 
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 * If a is not a Pailler Keypair or b is not a DGK key pair or c is not ElGamal Keypair
+	 */
 	public bob (Socket clientSocket,
 			KeyPair a, KeyPair b, KeyPair c) 
 					throws IOException, IllegalArgumentException
