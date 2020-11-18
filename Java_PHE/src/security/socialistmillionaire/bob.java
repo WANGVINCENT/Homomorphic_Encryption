@@ -577,7 +577,7 @@ public final class bob extends socialist_millionaires implements Runnable
 	}
 	
 	/**
-	 * Please review Correction to "Improving the DGK comparison protocol” - Protocol 3
+	 * Please review Correction to Improving the DGK comparison protocol - Protocol 3
 	 * @return
 	 * @throws IOException
 	 * @throws ClassNotFoundException

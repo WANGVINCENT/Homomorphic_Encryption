@@ -143,6 +143,7 @@ public class Main
 				
 				// Use some asserts to confirm the library works
 				basic_test();
+				System.out.println("Ran basic test, im outie!");
 				System.exit(0);
 				
 				bob_socket = new ServerSocket(9254);
