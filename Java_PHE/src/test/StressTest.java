@@ -595,7 +595,7 @@ public class StressTest
 		test_set[8] = new BigInteger("256");
 		test_set[9] = new BigInteger("512");
 		
-		test_set[16] = new BigInteger("1624");
+		test_set[10] = new BigInteger("1024");
 		test_set[11] = new BigInteger("2048");
 		test_set[12] = new BigInteger("4096");
 		test_set[13] = new BigInteger("8192");
@@ -624,7 +624,7 @@ public class StressTest
 		test_set[8] = new BigInteger("256");
 		test_set[9] = new BigInteger("512");
 		
-		test_set[16] = new BigInteger("1624");
+		test_set[10] = new BigInteger("1024");
 		test_set[11] = new BigInteger("2048");
 		test_set[12] = new BigInteger("4096");
 		test_set[13] = new BigInteger("8192");
@@ -654,14 +654,14 @@ public class StressTest
 		test_set[8] = new BigInteger("256");
 		test_set[9] = new BigInteger("512");
 		
-		test_set[16] = new BigInteger("1624");
+		test_set[10] = new BigInteger("1024");
 		test_set[11] = new BigInteger("2048");
 		test_set[12] = new BigInteger("4096");
 		test_set[13] = new BigInteger("8192");
 		test_set[14] = new BigInteger("16384");
 		test_set[15] = new BigInteger("32768");
 		
-		BigInteger t = new BigInteger("6");
+		BigInteger t = new BigInteger("10");
 		for (int i = 0; i < test_set.length; i++)
 		{
 			test_set[i] = test_set[i].add(t);
