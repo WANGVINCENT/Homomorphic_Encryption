@@ -6,5 +6,6 @@ rm -rf ./security/paillier/*.class
 rm -rf ./security/generic/*.class
 rm -rf ./security/gm/*.class
 rm -rf ./security/socialistmillionaire/*.class
+rm -rf ./security/misc/*.class
 rm -rf ./Main.class
 rm -rf ./bin/clean.sh

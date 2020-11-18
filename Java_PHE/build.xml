@@ -54,5 +54,5 @@
         <java classname="Main" failonerror="true" fork="yes">
             <classpath refid="run.Main (1).classpath"/>
         </java>
-    </target>
+</target>
 </project>
