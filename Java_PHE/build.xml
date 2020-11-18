@@ -48,7 +48,7 @@
         <antcall target="build"/>
     </target>
     <target name="Main">
-        <java classname="Main" failonerror="true" fork="yes">
+        <java classname="Server" failonerror="true" fork="yes">
             <classpath refid="homomorphic_encryption.classpath"/>
         </java>
     </target>
