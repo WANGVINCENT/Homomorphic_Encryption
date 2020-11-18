@@ -3,4 +3,6 @@ jdk:
   - openjdk8
   - oraclejdk8
 
-script: ant build
+script: 
+- cd Java_PHE
+- ant build
