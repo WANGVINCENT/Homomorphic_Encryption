@@ -650,8 +650,8 @@ C++ author: David Lalo
 All papers and protocols used in the code have been published in various cryptography journals. Please view the Papers directory to read the paper our code implements. If you use this library, please cite the papers in the Papers/ directory. 
 
 Also, please cite the paper:
-"Server-side Fingerprint-Based Indoor Localization Using Encrypted Sorting"   by Andrew Quijano and Kemal Akkaya
-https://ieeexplore.ieee.org/abstrct/document/9059316
+A. Quijano and K. Akkaya, "Server-Side Fingerprint-Based Indoor Localization Using Encrypted Sorting," 2019 IEEE 16th International Conference on Mobile Ad Hoc and Sensor Systems Workshops (MASSW), Monterey, CA, USA, 2019, pp. 53-57, doi: 10.1109/MASSW.2019.00017.https://arxiv.org/abs/2008.11612
+
 https://arxiv.org/abs/2008.11612
 
 The work to create this repository was initially funded by the US NSF REU Site at FIU under the grant number REU CNS-1461119.

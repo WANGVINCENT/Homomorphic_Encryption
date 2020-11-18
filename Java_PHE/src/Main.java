@@ -5,7 +5,7 @@ import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.SecureRandom;
-import java.security.Security;
+
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,12 +13,10 @@ import java.util.List;
 import security.DGK.DGKKeyPairGenerator;
 import security.DGK.DGKOperations;
 import security.DGK.DGKPrivateKey;
-import security.DGK.DGKProvider;
 import security.DGK.DGKPublicKey;
 import security.DGK.DGKSignature;
 import security.elgamal.ElGamalKeyPairGenerator;
 import security.elgamal.ElGamalPrivateKey;
-import security.elgamal.ElGamalProvider;
 import security.elgamal.ElGamalCipher;
 import security.elgamal.ElGamalPublicKey;
 import security.elgamal.ElGamalSignature;
@@ -35,7 +33,6 @@ import security.paillier.PaillierKeyPairGenerator;
 import security.paillier.PaillierPrivateKey;
 import security.paillier.PaillierPublicKey;
 import security.paillier.PaillierSignature;
-import security.paillier.PaillierProvider;
 import security.socialistmillionaire.alice;
 import security.socialistmillionaire.bob;
 
@@ -73,10 +70,6 @@ public class Main
 	
 	public static void main(String [] args)
 	{
-		Security.addProvider(new DGKProvider());
-		Security.addProvider(new PaillierProvider());
-		Security.addProvider(new ElGamalProvider());
-
 		if (args.length != 0)
 		{
 			System.out.println("Alice mode activated...");
@@ -148,6 +141,10 @@ public class Main
 				// DGK_Test();
 				// ElGamal_Test();
 				
+				// Use some asserts to confirm the library works
+				basic_test();
+				System.exit(0);
+				
 				bob_socket = new ServerSocket(9254);
 				System.out.println("Bob is ready...");
 				bob_client = bob_socket.accept();
@@ -210,6 +207,13 @@ public class Main
 				}
 			}
 		}
+	}
+	
+	public static void basic_test() throws HomomorphicException
+	{
+		// Test Paillier
+		BigInteger a = PaillierCipher.encrypt(BigInteger.TEN, pk);
+		assert(PaillierCipher.decrypt(a, sk).equals(BigInteger.TEN));
 	}
 	
 	public static void k_min() 
@@ -881,7 +885,6 @@ public class Main
 	}
 	
 	// ------------------------------------ Generate numbers for Protocol 1-4 testing---------------------------
-	//---------------------Generate numbers-----------------------------------
 	public static BigInteger [] generate_low()
 	{
 		BigInteger [] test_set = new BigInteger[16];
@@ -971,8 +974,6 @@ public class Main
 	}
 	
 	// ----------------------------All Stress Test methods for Crypto-------------------------------------------------
-
-	//------------------------------------- Stress test crypto methods------------------------------------------
 	public static void Paillier_Test() throws InvalidKeyException, SignatureException, HomomorphicException
 	{
 		System.out.println("-----------PAILLIER TEST x" + SIZE + "--------------KEY: " + KEY_SIZE + "-----------");
