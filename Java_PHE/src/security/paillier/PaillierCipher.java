@@ -492,13 +492,13 @@ public final class PaillierCipher extends CipherSpi implements CipherConstants
 	public static BigInteger add(BigInteger ciphertext1, BigInteger ciphertext2, PaillierPublicKey pk) 
 			throws HomomorphicException
 	{
-		if (ciphertext1.signum() ==-1 || ciphertext1.compareTo(pk.n) == 1)
+		if (ciphertext1.signum() == -1 || ciphertext1.compareTo(pk.modulus) == 1)
 		{
-			throw new HomomorphicException("DGKAdd Invalid Parameter ciphertext1: " + ciphertext1);
+			throw new HomomorphicException("PaillierAdd Invalid Parameter ciphertext1: " + ciphertext1);
 		}
-		else if (ciphertext2.signum() ==-1 || ciphertext2.compareTo(pk.n) == 1)
+		else if (ciphertext2.signum() == -1 || ciphertext2.compareTo(pk.modulus) == 1)
 		{
-			throw new HomomorphicException("DGKAdd Invalid Parameter ciphertext2: " + ciphertext2);
+			throw new HomomorphicException("PaillierAdd Invalid Parameter ciphertext2: " + ciphertext2);
 		}
 		BigInteger ciphertext = ciphertext1.multiply(ciphertext2).mod(pk.modulus);
 		return ciphertext;
@@ -516,7 +516,7 @@ public final class PaillierCipher extends CipherSpi implements CipherConstants
 	 */
 	public static BigInteger add_plaintext(BigInteger ciphertext, BigInteger plaintext, PaillierPublicKey pk) throws HomomorphicException
 	{
-		if (ciphertext.signum() ==-1 || ciphertext.compareTo(pk.n) == 1)
+		if (ciphertext.signum() ==-1 || ciphertext.compareTo(pk.modulus) == 1)
 		{
 			throw new HomomorphicException("Paillier add_plaintext Invalid Parameter ciphertext: " + ciphertext);
 		}
@@ -582,7 +582,7 @@ public final class PaillierCipher extends CipherSpi implements CipherConstants
 		{
 			throw new HomomorphicException("PaillierCipher Multiply Invalid Parameter ciphertext: " + ciphertext);
 		}
-		if(plaintext.compareTo(pk.n) == 1)
+		if(plaintext.signum() == -1 || plaintext.compareTo(pk.n) == 1)
 		{
 			throw new HomomorphicException("PaillierCipher Invalid Parameter plaintext: " + plaintext);
 		}
@@ -609,7 +609,7 @@ public final class PaillierCipher extends CipherSpi implements CipherConstants
 	 */
 	public static BigInteger divide(BigInteger ciphertext, BigInteger divisor, PaillierPublicKey pk) throws HomomorphicException
 	{
-		return multiply(ciphertext, divisor.modInverse(pk.modulus), pk);
+		return multiply(ciphertext, divisor.modInverse(pk.n), pk);
 	}
 	
 	public static BigInteger divide(BigInteger ciphertext, long divisor, PaillierPublicKey pk) throws HomomorphicException

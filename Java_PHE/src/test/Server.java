@@ -34,7 +34,7 @@ public class Server
 	private static BigInteger [] low = StressTest.generate_low();
 	private static BigInteger [] mid = StressTest.generate_mid();
 	
-	public static void main(String [] args)
+	public static void main(String [] args) throws HomomorphicException
 	{
 		try
 		{
@@ -99,10 +99,6 @@ public class Server
 		{
 			o.printStackTrace();
 		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
 		finally
 		{
 			try 
@@ -130,23 +126,25 @@ public class Server
 		
 		// Test D(E(X)) = X
 		BigInteger a = PaillierCipher.encrypt(BigInteger.TEN, pk);
-		assert(BigInteger.TEN.equals(PaillierCipher.decrypt(a, sk)));
+		a = PaillierCipher.decrypt(a, sk);
+		assert(BigInteger.TEN.equals(a));
 		
 		// Test Addition
-		a = PaillierCipher.add(PaillierCipher.encrypt(BigInteger.TEN, pk), a, pk);
+		a = PaillierCipher.encrypt(a, pk);
+		a = PaillierCipher.add(a, a, pk);//20
 		assert(new BigInteger("20").equals(PaillierCipher.decrypt(a, sk)));
 		
 		// Test Subtraction
-		a = PaillierCipher.subtract(a, PaillierCipher.encrypt(BigInteger.TEN, pk), pk);
+		a = PaillierCipher.subtract(a, PaillierCipher.encrypt(BigInteger.TEN, pk), pk);// 20 - 10
 		assert(BigInteger.TEN.equals(PaillierCipher.decrypt(a, sk)));
 		
 		// Test Multiplication
-		a = PaillierCipher.multiply(a, BigInteger.TEN, pk);
+		a = PaillierCipher.multiply(a, BigInteger.TEN, pk); // 10 * 10
 		assert(new BigInteger("100").equals(PaillierCipher.decrypt(a, sk)));
 		
 		// Test Division
-		a = PaillierCipher.divide(a, new BigInteger("2"), pk);
-		assert(new BigInteger("5").equals(PaillierCipher.decrypt(a, sk)));
+		a = PaillierCipher.divide(a, new BigInteger("2"), pk); // 100/2 
+		assert(new BigInteger("50").equals(PaillierCipher.decrypt(a, sk)));
 	}
 	
 	public static void basic_gm(KeyPair p) throws HomomorphicException 
