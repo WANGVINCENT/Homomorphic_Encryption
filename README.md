@@ -1,4 +1,6 @@
 # Homomorphic Encryption
+https://travis-ci.com/AndrewQuijano/Homomorphic_Encryption.svg?branch=master  
+
 Homomorphic Encryption is a Java library that implements the following partially homomorphic encryption systems:
 * Paillier  
 * El-Gamal (Additive or multiplicative)  
@@ -650,7 +652,7 @@ C++ author: David Lalo
 All papers and protocols used in the code have been published in various cryptography journals. Please view the Papers directory to read the paper our code implements. If you use this library, please cite the papers in the Papers/ directory. 
 
 Also, please cite the paper:
-A. Quijano and K. Akkaya, "Server-Side Fingerprint-Based Indoor Localization Using Encrypted Sorting," 2019 IEEE 16th International Conference on Mobile Ad Hoc and Sensor Systems Workshops (MASSW), Monterey, CA, USA, 2019, pp. 53-57, doi: 10.1109/MASSW.2019.00017.https://arxiv.org/abs/2008.11612  
+A. Quijano and K. Akkaya, "Server-Side Fingerprint-Based Indoor Localization Using Encrypted Sorting," 2019 IEEE 16th International Conference on Mobile Ad Hoc and Sensor Systems Workshops (MASSW), Monterey, CA, USA, 2019, pp. 53-57, doi: 10.1109/MASSW.2019.00017.  
 
 https://arxiv.org/abs/2008.11612
 
