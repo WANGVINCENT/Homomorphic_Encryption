@@ -5,20 +5,17 @@
               directory with the processing instruction <?eclipse.ant.import?>
               as the first entry and export the buildfile again. --><project basedir="." default="build" name="homomorphic_encryption">
     <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="../../../eclipse/jee-2019-06/eclipse/"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.8"/>
     <property name="source" value="1.8"/>
     <path id="homomorphic_encryption.classpath">
         <pathelement location="bin"/>
     </path>
-    <path id="run.Main (1).classpath">
-        <path refid="homomorphic_encryption.classpath"/>
-    </path>
     <target name="init">
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
-                <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
@@ -52,7 +49,7 @@
     </target>
     <target name="Main">
         <java classname="Main" failonerror="true" fork="yes">
-            <classpath refid="run.Main (1).classpath"/>
+            <classpath refid="homomorphic_encryption.classpath"/>
         </java>
-</target>
+    </target>
 </project>
