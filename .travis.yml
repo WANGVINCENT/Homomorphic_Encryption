@@ -4,4 +4,4 @@ jdk:
 
 script: 
 - cd Java_PHE
-- ant build
+- ant -f build.xml clean build Main
