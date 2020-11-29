@@ -1,6 +1,8 @@
 # Homomorphic Encryption
 [![Build Status](https://travis-ci.com/AndrewQuijano/Homomorphic_Encryption.svg?branch=master)](https://travis-ci.com/AndrewQuijano/Homomorphic_Encryption)  
 
+[![codecov](https://codecov.io/gh/AndrewQuijano/Homomorphic_Encryption/branch/master/graph/badge.svg?token=OIFWDVX2SA)](https://codecov.io/gh/AndrewQuijano/Homomorphic_Encryption)
+
 Homomorphic Encryption is a Java library that implements the following partially homomorphic encryption systems:
 * Paillier  
 * El-Gamal (Additive or multiplicative)  
