@@ -1,7 +1,10 @@
 language: java
+sudo: false #for faster builds
 jdk:
   - openjdk8
 
 script: 
 - cd Java_PHE
 - ant -f build.xml clean build Server
+after_build:
+- bash < (curl -s https://codecov.io/bash)

@@ -20,7 +20,8 @@ As this library uses Java 8, the JAR file can be imported into an Android projec
 If you want to review/edit the library, import the JAVA_PHE directory into a Eclipse project and edit as necessary. The Main.java folder only exists for testing and provide examples of how to use the library.
 
 ## Usage
-Import the packages as necessary. See Main.java 
+Import the packages as necessary. For basic usage please check Server.java in the test package for basic usage of these cryptography libraries.
+Please view Client.java and Server.java for an example how to compare encrypted numbers, secure multiplication, secure division, etc. 
 
 # security.socialistmillionaire.alice
 **Initialize**
@@ -78,7 +79,22 @@ See Protocol 3 in "Correct to 'Improving the DGK comparison protocol'" in Alice 
     * value (**boolean**) - x >= y    
 * Raises (**HomomorphicException**)
     * 
+```java
+BigInteger x = new BigInteger("50");
+BigInteger y = new BigInteger("51");
 
+// Note: Assume bob is sharing y = new BigIntger("55");
+Niu.Protocol1(x); // TRUE, X <= Y
+Niu.Protocol3(x);// TRUE X <= Y
+Niu.Modified_Protocol3(x); // TRUE X <= Y
+
+// Note: Protocol 2 only works with Paillier encrypted values!
+// Note: Protocol 2/4 works with Paillier/DGK encrypted values!
+x = PaillierCipher.encrypt(x, pk); 
+y = PaillierCipher.encrypt(y, pk);
+Niu.Protocol2(x, y); // FALSE, b.c X >= Y is FALSE
+Niu.Protocol4(x, y); // FALSE: b.c X >= Y is FALSE
+```
 **division(x, y)**
 Please review Protocol 2 in the "Encrypted Integer Division" paper by Thjis Veugen
 * Parameters
@@ -144,12 +160,76 @@ KeyPair el_gamal = pg.generateKeyPair();
 	
 bob_socket = new ServerSocket(9254);
 bob_client = bob_socket.accept();
+// Note: Alice automatically gets the public keys!
 andrew = new bob(bob_client, pe, DGK, el_gamal);
 ```
+**Protocol1(y)**
+See Protocol 1 in "Improving the DGK comparison protocol" in Bob section.
+Compare with plaintext value y Bob has.
+* Parameters
+    * plaintext (**BigInteger**)
+* Returns
+    * value (**boolean**) - x <= y    
+* Raises (**HomomorphicException**)
+    * If the plaintext has more bits than what the DGK public key supports.
 
+**Protocol2()**
+See Protocol 2 in "Improving the DGK comparison protocol" in Bob section.
+* Parameters
+    * N/A
+* Returns
+    * value (**boolean**) - x >= y
+* Raises (**HomomorphicException**)
+    * N/A
 
+**Protocol3(y)**
+See Protocol 3 in "Improving the DGK comparison protocol" in Bob section. Compare with plaintext value y held by bob
+* Parameters
+    * y (**BigInteger**) - plaintext
+* Returns
+    * value (**boolean**) - x <= y    
+* Raises (**HomomorphicException**)
+    * If the plaintext has more bits than what the DGK public key supports
+
+**Modified_Protocol3(y)**
+See Protocol 3 in "Correction to 'Improving the DGK comparison protocol'" in Bob section. View the sub-protocol.
+* Parameters
+    * y (**BigInteger**) - plaintext
+* Returns
+    * value (**boolean**) - x <= y    
+* Raises (**HomomorphicException**)
+    * N/A
+
+**Protocol4()**
+See Protocol 3 in "Correct to 'Improving the DGK comparison protocol'" in Bob section.
+* Parameters
+    * N/A
+* Returns
+    * value (**boolean**) - x >= y    
+* Raises (**HomomorphicException**)
+    * 
+```java
+
+```
+**division(x, y)**
+Please review Protocol 2 in the "Encrypted Integer Division" paper by Thjis Veugen
+* Parameters
+    * d (**BigInteger**) - plaintext value
+* Returns
+    * N/A
+* Raises (**HomomorphicException**)
+    * Constraints: 0 <= x <= N * 2^{-sigma} and 0 <= d < N
+
+**multiplication()**
+Please review 'Correction of a Secure Comparison Protocol for Encrypted Integers in IEEE WIFS 2012 (Short Paper)' by Mau et al., page 3, an outsourced multiplication section.
+* Parameters
+    * N/A
+* Returns
+    * N/A
+* Raises (**HomomorphicException**)
+    * Constraints: 0 <= x <= N * 2^{-sigma} and 0 <= d < N
 # security.DGK
-**Generate Paillier Keys**
+**Generate DGK Keys**
 ```java
 int KEY_SIZE = 1024; //number of bits
 SecureRandom r = new SecureRandom();
@@ -281,7 +361,7 @@ Divide the encrypted value in the ciphertext with the plaintext
 
 
 # security.elgamal
-**Generate Paillier Keys**
+**Generate ElGamal Keys**
 ```java
 int KEY_SIZE = 1024; //number of bits
 SecureRandom r = new SecureRandom();
@@ -649,7 +729,7 @@ Please make sure to update tests as appropriate.
 Java author: Andrew Quijano  
 C++ author: David Lalo
 
-All papers and protocols used in the code have been published in various cryptography journals. Please view the Papers directory to read the paper our code implements. If you use this library, please cite the papers in the Papers/ directory. 
+All papers and protocols used in the code have been published in various cryptography journals. Please view the Papers directory to read the paper this library code implements. If you use this library, please cite the papers in the Papers directory. 
 
 Also, please cite the paper:
 A. Quijano and K. Akkaya, "Server-Side Fingerprint-Based Indoor Localization Using Encrypted Sorting," 2019 IEEE 16th International Conference on Mobile Ad Hoc and Sensor Systems Workshops (MASSW), Monterey, CA, USA, 2019, pp. 53-57, doi: 10.1109/MASSW.2019.00017.  
